@@ -1,0 +1,42 @@
+#!fsharp
+
+open System.IO
+let lines = 
+    File.ReadAllLines("input.txt")
+
+let splitLine (s:string) = (s[..6], s[7..])
+let rec decode (one:char) s = 
+    match s with
+    | "" -> 0.0
+    | s -> (if s[0] = one then (2.0 ** float(s.Length - 1)) else 0) + decode one s[1..]
+
+fst (splitLine "") 
+
+lines
+|> Array.map (fun s -> (decode 'B' (fst (splitLine s)), decode 'R' (snd (splitLine s))))
+|> Array.map (fun a -> int(fst a) * 8 + int(snd a))
+|> Array.max
+
+#!fsharp
+
+open System.IO
+let lines = 
+    File.ReadAllLines("input.txt")
+
+let splitLine (s:string) = (s[..6], s[7..])
+let rec decode (one:char) s = 
+    match s with
+    | "" -> 0.0
+    | s -> (if s[0] = one then (2.0 ** float(s.Length - 1)) else 0) + decode one s[1..]
+
+fst (splitLine "") 
+
+let allSeats = List.toArray [1..(127*8+7)]
+
+lines
+|> Array.map (fun s -> (decode 'B' (fst (splitLine s)), decode 'R' (snd (splitLine s))))
+|> Array.map (fun a -> int(fst a) * 8 + int(snd a))
+|> fun a-> Array.concat [[|1..100|] ; a]
+|> fun a -> Array.except a allSeats
+|> fun a -> a[0]
+//Array.except [1;2] allSeats

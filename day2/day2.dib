@@ -20,7 +20,7 @@ let parseDirection s =
     | "forward" -> Forward
     | _ -> Stay
 
-let applyDirection dir pos amount=
+let applyDirection dir (pos:State) amount=
     match dir with
     | Up -> {pos with x = pos.x - amount}
     | Down -> {pos with x = pos.x + amount}
@@ -54,7 +54,7 @@ let parseDirection s =
     | "forward" -> Forward
     | _ -> Stay
 
-let applyDirection dir pos amount=
+let applyDirection dir (pos: State) amount=
     match dir with
     | Up -> {pos with aim = pos.aim - amount}
     | Down -> {pos with aim = pos.aim + amount}
