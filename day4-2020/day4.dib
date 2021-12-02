@@ -1,0 +1,203 @@
+#!fsharp
+
+open System.IO
+open System
+
+let heightReg = RegularExpressions.Regex ""
+let eyeReg = RegularExpressions.Regex ""
+let hairReg = RegularExpressions.Regex ""
+let pidReg = RegularExpressions.Regex ""
+
+type PassportBase = {byr : string; iyr : string; ecl : string; hcl : string; hgt : string; pid : string; eyr : string;}
+type PassportCid = {cid : string;}
+
+let lines = File.ReadAllText("input.txt").Split("\n\n")
+
+let required = ["byr";"iyr";"eyr";"hgt";"hcl";"ecl";"pid"]
+
+let hasAll needed list =
+    List.forall (fun a -> List.contains a list) needed
+
+let tryParse (t:string) (s : string[][]) = 
+    let o = s |> Array.filter (fun (a:string[]) -> (a[0] = t))
+    if o.Length > 0 then o[0][1] else ""
+    //o[0][1]
+
+let validate p =
+    not(p.byr = "")&&
+    not(p.iyr = "")&&
+    not(p.eyr = "")&&
+    not(p.hgt = "")&&
+    not(p.hcl = "")&&
+    not(p.ecl = "")&&
+    not(p.pid = "")&&
+    (int p.byr) > 1920&&
+    (int p.byr) < 2002&&
+    (int p.iyr) > 2010&&
+    (int p.iyr) < 2020&&
+    (int p.eyr) > 2020&&
+    (int p.eyr) < 2030&&
+    heightReg.IsMatch p.hgt&&
+    heightReg.Match(p.hgt).Groups[0] >
+
+
+
+let parsePassport list =
+    {
+        byr = (tryParse "byr" list);
+        iyr = (tryParse "iyr" list);
+        ecl = (tryParse "ecl" list);
+        hcl = (tryParse "hcl" list);
+        hgt = (tryParse "hgt" list);
+        pid = (tryParse "pid" list);
+        eyr = (tryParse "eyr" list);
+    }
+
+lines
+    |> Array.map (fun s -> s.Replace("\n"," "))
+    |> Array.map (fun s -> Array.map (fun (a:string) -> a.Split(':')[0]) (s.Split(' ')))
+    |> Array.filter (fun a -> (hasAll required (Array.toList a))) 
+    |> Array.length
+    |> printfn "Part 1: %d"
+
+//lines |> Array.length
+lines
+    |> Array.map (fun s -> s.Replace("\n"," "))
+    |> Array.map (fun s -> Array.map (fun (a:string) -> a.Split(':')) (s.Split(' ')))
+    |> Array.map parsePassport
+
+#!fsharp
+
+open System.IO
+open System.Text.RegularExpressions
+
+type Passport = {
+    byr: string option // Birth Year
+    iyr: string option // Issue Year
+    eyr: string option // Expiration Year
+    hgt: string option // Height
+    hcl: string option // Hair Color
+    ecl: string option // Eye Color
+    pid: string option // Passport ID
+    cid: string option // Country ID
+}
+
+let readLines filename = File.ReadAllLines filename
+
+let splitPassportSections lines =
+    Array.fold (fun grouped line ->
+        match line with
+        | "" -> [] :: grouped
+        | line -> (line :: grouped.Head) :: grouped.Tail
+    ) [[]] lines
+
+let passportKeyValueRegex = Regex(@"(\w+):([^ ]+)", RegexOptions.Compiled)
+
+let parsePassportMapOfLines lines =
+    lines
+    |> Seq.collect passportKeyValueRegex.Matches
+    |> Seq.map (fun m -> (m.Groups.[1].Value, m.Groups.[2].Value))
+    |> Map.ofSeq
+
+let parsePassportOfMap (map: Map<string,string>) =
+    let tryFind key = Map.tryFind key map
+    {
+        byr = tryFind "byr"
+        iyr = tryFind "iyr"
+        eyr = tryFind "eyr"
+        hgt = tryFind "hgt"
+        hcl = tryFind "hcl"
+        ecl = tryFind "ecl"
+        pid = tryFind "pid"
+        cid = tryFind "cid"
+    }
+
+let validatePassport1 passport =
+    passport.byr <> None
+    && passport.iyr <> None
+    && passport.eyr <> None
+    && passport.hgt <> None
+    && passport.hcl <> None
+    && passport.ecl <> None
+    && passport.pid <> None
+    //&& passport.cid <> None
+
+let colorRegex = Regex(@"^#[0-9a-f]{6}$", RegexOptions.Compiled)
+let isValidColor = colorRegex.IsMatch
+
+let isIntInRange min max i =
+    i >= min && i <= max
+
+let isValidIntInRange min max str =
+    try
+        isIntInRange min max (int str)
+    with
+    | _ -> false
+
+let distanceRegex = Regex(@"^(\d+)(cm|in)$", RegexOptions.Compiled)
+type Distance =
+    | Centimeter of int
+    | Inches of int
+
+let isValidDistance str =
+    let matchDistance str =
+        let m = distanceRegex.Match str
+        match m.Success with
+        | true -> Some (int m.Groups.[1].Value, m.Groups.[2].Value)
+        | false -> None
+
+    match matchDistance str with
+    | Some (i, "cm") -> isIntInRange 150 193 i
+    | Some (i, "in") -> isIntInRange 59 76 i
+    | _ -> false
+
+let validEyeColors = Set.ofList [ "amb"; "blu"; "brn"; "gry"; "grn"; "hzl"; "oth" ]
+let isValidEyeColor str = Set.contains str validEyeColors
+
+let pidRegex = Regex(@"^\d{9}$", RegexOptions.Compiled)
+let isValidPid = pidRegex.IsMatch
+
+let isSomeAnd f = function
+    | None -> false
+    | Some v -> f v
+
+let validatePassport2 passport =
+    passport.byr |> isSomeAnd (isValidIntInRange 1920 2002)
+    && passport.iyr |> isSomeAnd (isValidIntInRange 2010 2020)
+    && passport.eyr |> isSomeAnd (isValidIntInRange 2020 2030)
+    && passport.hgt |> isSomeAnd isValidDistance
+    && passport.hcl |> isSomeAnd isValidColor
+    && passport.ecl |> isSomeAnd isValidEyeColor
+    && passport.pid |> isSomeAnd isValidPid
+
+module Array =
+    module Parallel =
+        let count predicate arr =
+            Array.Parallel.map predicate arr
+            |> Seq.filter ((=) true)
+            |> Seq.length
+
+
+let filename = "input.txt"
+let lines = readLines filename
+printfn "Read %i lines from %s" lines.Length filename
+
+let passportSections = splitPassportSections lines |> Array.ofList
+printfn "Found %i passports" passportSections.Length
+
+let passports =
+    passportSections
+    |> Array.Parallel.map parsePassportMapOfLines
+    |> Array.Parallel.map parsePassportOfMap
+
+printfn ""
+printfn "Part 1"
+passports
+    |> Array.Parallel.count validatePassport1
+    |> printfn " Found %i valid passports"
+
+printfn ""
+printfn "Part 2"
+passports
+    |> Array.Parallel.count validatePassport2
+    |> printfn " Found %i valid passports"

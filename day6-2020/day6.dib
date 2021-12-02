@@ -1,0 +1,22 @@
+#!fsharp
+
+open System.IO
+let groups = 
+    File.ReadAllText("input.txt").Split("\n\n") |> Array.map (fun a -> a.Split("\n"))
+
+let getUnion list = 
+    list
+    |> Array.map (Seq.sort) 
+    |> Array.map (fun s -> Set.ofSeq s) 
+    |> Array.fold (fun state set -> Set.union state set) Set.empty
+    |> Set.toArray
+
+let getIntersect list =
+    list
+    |> Array.map (Seq.sort) 
+    |> Array.map (fun s -> Set.ofSeq s) 
+    |> Array.fold (fun state set -> Set.intersect state set) (set { 'a'..'z' })
+    |> Set.toArray
+
+printfn "Part 1: %d" (groups |> Array.map (fun l -> Array.length (getUnion l)) |> Array.sum)
+printfn "Part 2: %d" (groups |> Array.map (fun l -> Array.length (getIntersect l)) |> Array.sum)
