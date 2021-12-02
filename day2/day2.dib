@@ -1,0 +1,67 @@
+#!fsharp
+
+open System.IO
+let lines = 
+    File.ReadAllLines("input.txt")
+    |> Array.map (fun s -> s.Split(' '))
+
+type State = {x:int;y:int;aim:int}
+
+type Direction =
+    | Up
+    | Down
+    | Forward
+    | Stay
+
+let parseDirection s =
+    match s with
+    | "down" -> Down
+    | "up" -> Up
+    | "forward" -> Forward
+    | _ -> Stay
+
+let applyDirection dir pos amount=
+    match dir with
+    | Up -> {pos with x = pos.x - amount}
+    | Down -> {pos with x = pos.x + amount}
+    | Forward -> {pos with y = pos.y + amount}
+    | Stay -> pos
+ 
+let a = lines
+        |> Array.toList
+        |> List.fold (fun pos arr -> applyDirection (parseDirection arr[0]) pos (int arr[1])) {x=0;y=0;aim=0}
+a.x * a.y
+
+#!fsharp
+
+open System.IO
+let lines = 
+    File.ReadAllLines("input.txt")
+    |> Array.map (fun s -> s.Split(' '))
+
+type State = {x:int;y:int;aim:int}
+
+type Direction =
+    | Up
+    | Down
+    | Forward
+    | Stay
+
+let parseDirection s =
+    match s with
+    | "down" -> Down
+    | "up" -> Up
+    | "forward" -> Forward
+    | _ -> Stay
+
+let applyDirection dir pos amount=
+    match dir with
+    | Up -> {pos with aim = pos.aim - amount}
+    | Down -> {pos with aim = pos.aim + amount}
+    | Forward -> {pos with x = pos.x + amount; y = pos.y + pos.aim * amount}
+    | Stay -> pos
+ 
+let a = lines
+        |> Array.toList
+        |> List.fold (fun pos arr -> applyDirection (parseDirection arr[0]) pos (int arr[1])) {x=0;y=0;aim=0}
+a.x * a.y
