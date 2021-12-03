@@ -15,18 +15,13 @@ let mostCommon oneP one zero list=
     |> Array.map (fun e -> if (isMostCommon oneP e) then one else zero)
     |> Array.toList 
 
-let gamma =  decodeBinary 1 (mostCommon '1' 1 0 lines)
-let epsilon = decodeBinary 0 (mostCommon '1' 1 0 lines)
-
 let result = mostCommon '1' 1 0 lines |> fun l -> (decodeBinary 1 l, decodeBinary 0 l)
-
 printfn "Part 1: %d" (fst result * snd result)
 
 #!fsharp
 
-let binAt list i= (mostCommon '1' '1' '0' list)[i]
-
-let filterWithAt op i (list : char[][]) = list |> Array.filter (fun a ->  (op a[i] (binAt list i)))
+let mostCommonAt list i= (mostCommon '1' '1' '0' list)[i]
+let filterWithAt op i (list : char[][]) = list |> Array.filter (fun a ->  (op a[i] (mostCommonAt list i)))
 
 let rec run step i (list : char[][]) =
     match list.Length with

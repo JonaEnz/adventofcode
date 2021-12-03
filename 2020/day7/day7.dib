@@ -1,0 +1,63 @@
+#!fsharp
+
+open System.IO
+open System.Text.RegularExpressions
+let lines = 
+    File.ReadAllLines("input.txt")
+
+let lineRegex = Regex "(\S+ \S+) bags contain (.+)."
+let ruleRegex = Regex "(\d+) (\S+ \S+) bags?"
+let noOtherRegex = Regex ""
+
+type Rule = {name:string; amount:int}
+type Bag = {name:string; rules : Rule[];}
+
+let ruleFromString s = 
+    let matches = ruleRegex.Matches s
+    {
+        name = matches[0].Groups[2].Value;
+        amount = int matches[0].Groups[1].Value;
+    }
+
+let parseRules (s:string) = 
+    match s with
+    | "no other bags" -> Array.empty
+    | s -> s.Split(", ") |> Array.map ruleFromString
+
+let emptyRule name = {name=name; amount=0}
+
+let bagFromString s = 
+    let matches = lineRegex.Matches s
+    {
+        name = matches[0].Groups[1].Value;
+        rules = parseRules matches[0].Groups[2].Value
+    }
+
+let bagHas n (b:Bag) = 
+    let names = Array.map (fun (a:Rule) -> a.name) b.rules
+    Array.contains n names
+
+let filterBags n bs = Array.filter (bagHas n) bs |> Array.map (fun a -> a.name)
+
+let bags = lines |> Array.filter lineRegex.IsMatch |> Array.map bagFromString
+
+let rec run bags acc names =
+    match names with
+    | [] -> acc
+    | n :: ns -> run bags (Array.fold (fun s m -> Set.add m s) acc (filterBags n bags)) (List.append ns (Array.toList (filterBags n bags)))
+
+run bags Set.empty ["shiny gold"] |> Set.toList |> List.length
+
+//bags |> Array.filter (bagHas "shiny gold")
+
+#!fsharp
+
+let getBag name bags = bags |> Array.filter (fun b -> b.name = name) |> Array.head
+
+let rec getAmount rule =
+    let getBagAmount bag = 1 + Array.sum (Array.map getAmount bag.rules)
+    rule.amount * (getBagAmount (getBag rule.name bags))
+
+getAmount {name = "shiny gold"; amount=1} - 1
+
+//getBag "faded tan" bags |> fun b ->getAmount {name = b.name; amount=1}
