@@ -6,41 +6,32 @@ let lines =
         |> Array.map Seq.toArray
 let rec decodeBinary one s = 
     match s with
-    | [] -> 0.0
-    | x :: xs -> (if x = one then (2.0 ** float(s.Length - 1)) else 0) + decodeBinary one xs
-
-let transpose (matrix:_[][]) =
-    Array.init matrix[0].Length (fun i ->
-        Array.init matrix.Length (fun j ->
-        matrix[j][i]))
-
-let bin oneP one zero list= 
+    | [] -> 0
+    | x :: xs -> (if x = one then int(2.0 ** float(s.Length - 1)) else 0) + decodeBinary one xs
+let isMostCommon element array = array |> Array.filter ((=) element) |> Array.length |> float |> (<=) (float(array.Length) / 2.0)
+let mostCommon oneP one zero list= 
     list 
-    |> transpose 
-    |> Array.map (Array.filter ((=) oneP)) 
-    |> Array.map Array.length 
-    |> Array.map (fun i ->if ((float i )>= (float(list.Length) / 2.0)) then one else zero) 
+    |> Array.toSeq |> Array.transpose
+    |> Array.map (fun e -> if (isMostCommon oneP e) then one else zero)
     |> Array.toList 
 
-let gamma =  decodeBinary 1 (bin '1' 1 0 lines)
-let epsilon = decodeBinary 0 (bin '1' 1 0 lines)
+let gamma =  decodeBinary 1 (mostCommon '1' 1 0 lines)
+let epsilon = decodeBinary 0 (mostCommon '1' 1 0 lines)
 
-printfn "Part 1: %d" (int(gamma * epsilon))
+let result = mostCommon '1' 1 0 lines |> fun l -> (decodeBinary 1 l, decodeBinary 0 l)
+
+printfn "Part 1: %d" (fst result * snd result)
 
 #!fsharp
 
-let binAt  list i= (bin '1' '1' '0' list)[i]
+let binAt list i= (mostCommon '1' '1' '0' list)[i]
 
-let rec step i (list : char[][]) = list |> Array.filter (fun a -> ((a[i]) = (binAt list i)))
+let filterWithAt op i (list : char[][]) = list |> Array.filter (fun a ->  (op a[i] (binAt list i)))
 
-let rec step2 i (list : char[][]) = list |> Array.filter (fun a -> (not ((a[i]) = (binAt list i))))
-
-let rec run stepFun i (list : char[][]) =
+let rec run step i (list : char[][]) =
     match list.Length with
     | 1 -> list[0]
-    | _ -> run stepFun (i+1) (stepFun i list)
+    | _ -> run step (i+1) (step i list)
 
-let oxygen = decodeBinary '1' (Array.toList(run step 0 lines))
-let co2 = decodeBinary '1' (Array.toList(run step2 0 lines))
-
-co2 * oxygen
+let part2result op =  decodeBinary '1' (Array.toList(run (filterWithAt op) 0 lines))
+printfn "Part 2: %d" ((part2result (=)) * (part2result (<>)))
