@@ -34,26 +34,6 @@ a.x * a.y
 
 #!fsharp
 
-open System.IO
-let lines = 
-    File.ReadAllLines("input.txt")
-    |> Array.map (fun s -> s.Split(' '))
-
-type State = {x:int;y:int;aim:int}
-
-type Direction =
-    | Up
-    | Down
-    | Forward
-    | Stay
-
-let parseDirection s =
-    match s with
-    | "down" -> Down
-    | "up" -> Up
-    | "forward" -> Forward
-    | _ -> Stay
-
 let applyDirection dir (pos: State) amount=
     match dir with
     | Up -> {pos with aim = pos.aim - amount}
