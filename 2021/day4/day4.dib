@@ -1,0 +1,65 @@
+#!fsharp
+
+open System.IO
+let lines = 
+    File.ReadAllText("input.txt").Split("\n\n")
+
+type Board = {board: int[][]; marked : (int * int) list}
+
+let draw = lines[0].Split(",") |> Array.map int
+let boards = 
+    lines[1..] 
+    |> Array.map (fun s -> 
+        (s.Split("\n"))
+        |> Array.map (fun st -> 
+            st.Split()
+            |> Array.filter (fun st -> st.Length <> 0)
+            |> Array.map int))
+    |> Array.map (fun p -> {board = p; marked = List.empty}) 
+
+#!fsharp
+
+let isWin board =
+    let checkX x = List.fold (fun state i -> state && (List.contains (x,i) board.marked)) true [0..4]
+    let checkY y = List.fold (fun state i -> state && (List.contains (i,y) board.marked)) true [0..4]
+    List.exists (fun i -> checkX i || checkY i) [0..4]
+
+let markOnBoard number b=
+    {
+    board = b.board;
+    marked = List.fold 
+            (fun l x-> List.fold (fun l y -> if number = b.board[x][y] then (x,y)::l else l) l [0..4]) 
+            b.marked [0..4]
+    }
+
+let step number = Array.map (markOnBoard number)
+
+let rec runPart1 (d:int[]) last bs =
+    let winning = Array.filter isWin bs
+    match winning.Length > 0, d with
+    | true, _ -> Some (winning[0], last)
+    | _, [||] -> None
+    | _, _ -> runPart1 d[1..] d[0] (step d[0] bs)
+
+let sumUnmarked b =
+    Array.fold (fun s x -> (Array.fold (fun st y -> if not (List.contains (x,y) b.marked) then st + b.board[x][y] else st) s [|0..4|])) 0 [|0..4|]
+
+let s = (Option.get (runPart1 draw 0 boards))
+let sum = {board = Array.copy (fst s).board; marked = (fst s).marked } |> sumUnmarked
+sum * (snd s)
+
+#!fsharp
+
+let rec runPart2 (d:int[]) last lastB bs =
+    let notWinning = Array.filter (fun b -> not (isWin b)) bs
+    match notWinning.Length = 0, d with
+    | true, _ -> Some (lastB, last)
+    | _, [||] -> None
+    | _, _ -> runPart2 d[1..] d[0] notWinning[0] (step d[0] bs)
+
+let sumUnmarked b =
+    Array.fold (fun s x -> (Array.fold (fun st y -> if not (List.contains (x,y) b.marked) then st + b.board[x][y] else st) s [|0..4|])) 0 [|0..4|]
+
+let s = (Option.get (runPart2 draw 0 boards[0] boards))
+let sum = {board = Array.copy (fst s).board; marked = (fst s).marked } |> sumUnmarked
+(sum - (snd s)) * (snd s) // :(
