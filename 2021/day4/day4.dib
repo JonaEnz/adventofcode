@@ -4,33 +4,31 @@ open System.IO
 let lines = 
     File.ReadAllText("input.txt").Split("\n\n")
 
-type Board = {board: int[][]; marked : (int * int) list}
+type Board = {board: int[,]; marked : (int * int) list}
+
+let boardIndices = List.collect (fun x -> List.init 5 (fun y -> (x,y))) [0..4]
 
 let draw = lines[0].Split(",") |> Array.map int
 let boards = 
     lines[1..] 
-    |> Array.map (fun s -> 
+    |> Array.map (fun s -> //Board
         (s.Split("\n"))
-        |> Array.map (fun st -> 
+        |> Array.map (fun st -> ( //Line
             st.Split()
             |> Array.filter (fun st -> st.Length <> 0)
-            |> Array.map int))
+            |> Array.map int)))
+    |> Array.map (fun a -> array2D a[0..4])
     |> Array.map (fun p -> {board = p; marked = List.empty}) 
 
 #!fsharp
 
 let isWin board =
-    let checkX x = List.fold (fun state i -> state && (List.contains (x,i) board.marked)) true [0..4]
-    let checkY y = List.fold (fun state i -> state && (List.contains (i,y) board.marked)) true [0..4]
+    let checkX x = List.fold (fun state i -> state && List.contains (x,i) board.marked) true [0..4]
+    let checkY y = List.fold (fun state i -> state && List.contains (i,y) board.marked) true [0..4]
     List.exists (fun i -> checkX i || checkY i) [0..4]
 
-let markOnBoard number b=
-    {
-    board = b.board;
-    marked = List.fold 
-            (fun l x-> List.fold (fun l y -> if number = b.board[x][y] then (x,y)::l else l) l [0..4]) 
-            b.marked [0..4]
-    }
+let markOnBoard number b= {board = b.board;
+    marked = boardIndices |> List.filter (fun (x,y) -> (b.board[x,y] = number)) |> List.append b.marked}
 
 let step number = Array.map (markOnBoard number)
 
@@ -42,11 +40,10 @@ let rec runPart1 (d:int[]) last bs =
     | _, _ -> runPart1 d[1..] d[0] (step d[0] bs)
 
 let sumUnmarked b =
-    Array.fold (fun s x -> (Array.fold (fun st y -> if not (List.contains (x,y) b.marked) then st + b.board[x][y] else st) s [|0..4|])) 0 [|0..4|]
+    boardIndices |> List.filter (fun (x,y) -> not (List.contains (x,y) b.marked)) |> List.map (fun (x,y) -> b.board[x,y]) |> List.sum
 
 let s = (Option.get (runPart1 draw 0 boards))
-let sum = {board = Array.copy (fst s).board; marked = (fst s).marked } |> sumUnmarked
-sum * (snd s)
+sumUnmarked (fst s) * (snd s)
 
 #!fsharp
 
@@ -57,9 +54,5 @@ let rec runPart2 (d:int[]) last lastB bs =
     | _, [||] -> None
     | _, _ -> runPart2 d[1..] d[0] notWinning[0] (step d[0] bs)
 
-let sumUnmarked b =
-    Array.fold (fun s x -> (Array.fold (fun st y -> if not (List.contains (x,y) b.marked) then st + b.board[x][y] else st) s [|0..4|])) 0 [|0..4|]
-
 let s = (Option.get (runPart2 draw 0 boards[0] boards))
-let sum = {board = Array.copy (fst s).board; marked = (fst s).marked } |> sumUnmarked
-(sum - (snd s)) * (snd s) // :(
+(sumUnmarked (fst s) - (snd s)) * (snd s)
