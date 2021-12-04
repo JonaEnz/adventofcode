@@ -1,0 +1,52 @@
+#!fsharp
+
+open System.IO
+let lines = File.ReadAllLines("input.txt")
+
+type Command =
+    | NOP
+    | ACC
+    | JMP
+type CodeLine = {cmd : Command; num : int; visited : bool;}
+type RobotState = {acc : int; line : int; history : int list}
+let codeFromStr (s:string[]) = 
+    match s[0] with
+    | "acc" -> {cmd = Command.ACC; num= int s[1]; visited = false;}
+    | "jmp" -> {cmd = Command.JMP; num= int s[1]; visited = false;}
+    | _ -> {cmd = Command.NOP; num= int s[1]; visited = false;}
+
+let pgrmCode = 
+    lines
+    |> Array.map (fun s -> s.Split())
+    |> Array.map codeFromStr
+
+let run (code: CodeLine[]) robot =
+    match code[robot.line].cmd with
+    | Command.ACC -> {acc = robot.acc + code[robot.line].num;line = robot.line + 1; history = List.append robot.history [robot.line]}
+    | Command.JMP -> {acc = robot.acc;line = robot.line + code[robot.line].num; history = List.append robot.history [robot.line]}
+    | Command.NOP -> {acc = robot.acc;line = robot.line + 1; history = List.append robot.history [robot.line]}
+
+run pgrmCode {acc = 0; line = 0; history = list.Empty}
+
+let rec runTo code robot condition = 
+    match condition robot with
+    | true -> robot
+    | false -> runTo code (run code robot) condition
+
+printfn "Part 1: %d " (runTo pgrmCode {acc = 0; line = 0; history = list.Empty} (fun r -> List.contains r.line r.history)).acc
+
+let codeGen code =
+    let changeLine line =
+        match line.cmd with
+        | Command.ACC -> line
+        | Command.JMP -> {line with cmd = Command.NOP}
+        | Command.NOP -> {line with cmd = Command.JMP}
+    let cg = Array.init (Array.length code) (fun i -> Array.copy code) 
+    Array.iteri (fun i a -> Array.set a i (changeLine a[i])) cg
+    cg
+
+let cg = codeGen pgrmCode
+
+let runPart2 code = runTo code {acc = 0; line = 0; history = list.Empty} (fun r -> r.line >= code.Length || List.contains r.line r.history)
+let runAllRobots = Array.map (runPart2) cg |> Array.sortByDescending (fun r -> r.line)
+printfn "Part 2 : %d" runAllRobots[0].acc

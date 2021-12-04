@@ -7,8 +7,9 @@ let lines =
 type Board = {board: int[,]; marked : (int * int) list}
 
 let boardIndices = List.collect (fun x -> List.init 5 (fun y -> (x,y))) [0..4]
+let tryParseInt s = try s |> int |> Some with :? FormatException -> None
 
-let draw = lines[0].Split(",") |> Array.map int
+let draw = lines[0].Split(",") |> Array.map int |> Array.toSeq
 let boards = 
     lines[1..] 
     |> Array.map (fun s -> //Board
@@ -16,15 +17,16 @@ let boards =
         |> Array.map (fun st -> ( //Line
             st.Split()
             |> Array.filter (fun st -> st.Length <> 0)
-            |> Array.map int)))
+            |> Array.map (tryParseInt >> Option.toList >> List.toArray)
+            |> Array.collect id)))
     |> Array.map (fun a -> array2D a[0..4])
     |> Array.map (fun p -> {board = p; marked = List.empty}) 
 
 #!fsharp
 
-let isWin board =
-    let checkX x = List.fold (fun state i -> state && List.contains (x,i) board.marked) true [0..4]
-    let checkY y = List.fold (fun state i -> state && List.contains (i,y) board.marked) true [0..4]
+let isWin (board:Board) =
+    let checkX x = List.forall (fun i -> List.contains (x,i) board.marked) [0..4]
+    let checkY y = List.forall (fun i -> List.contains (i,y) board.marked) [0..4]
     List.exists (fun i -> checkX i || checkY i) [0..4]
 
 let markOnBoard number b= {board = b.board;
@@ -32,27 +34,27 @@ let markOnBoard number b= {board = b.board;
 
 let step number = Array.map (markOnBoard number)
 
-let rec runPart1 (d:int[]) last bs =
+let rec runPart1 (d:seq<int>) last bs =
     let winning = Array.filter isWin bs
-    match winning.Length > 0, d with
+    match winning.Length > 0, Seq.isEmpty d with
     | true, _ -> Some (winning[0], last)
-    | _, [||] -> None
-    | _, _ -> runPart1 d[1..] d[0] (step d[0] bs)
+    | _, true -> None
+    | _, _ -> runPart1 (Seq.tail d) (Seq.head d) (step (Seq.head d) bs)
 
 let sumUnmarked b =
-    boardIndices |> List.filter (fun (x,y) -> not (List.contains (x,y) b.marked)) |> List.map (fun (x,y) -> b.board[x,y]) |> List.sum
+    boardIndices |> List.filter (fun (x,y) -> not <| List.contains (x,y) b.marked) |> List.map (fun (x,y) -> b.board[x,y]) |> List.sum
 
 let s = (Option.get (runPart1 draw 0 boards))
 sumUnmarked (fst s) * (snd s)
 
 #!fsharp
 
-let rec runPart2 (d:int[]) last lastB bs =
+let rec runPart2 (d :seq<int>) last lastB bs =
     let notWinning = Array.filter (fun b -> not (isWin b)) bs
-    match notWinning.Length = 0, d with
+    match notWinning.Length = 0, Seq.isEmpty d with
     | true, _ -> Some (lastB, last)
-    | _, [||] -> None
-    | _, _ -> runPart2 d[1..] d[0] notWinning[0] (step d[0] bs)
+    | _, true -> None
+    | _, _ -> runPart2 (Seq.tail d) (Seq.head d) notWinning[0] (step (Seq.head d) bs)
 
 let s = (Option.get (runPart2 draw 0 boards[0] boards))
 (sumUnmarked (fst s) - (snd s)) * (snd s)
