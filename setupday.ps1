@@ -29,3 +29,5 @@ $session.Cookies.Add($cookie);
 Invoke-WebRequest $remoteFileLocation -WebSession $session -TimeoutSec 900 -OutFile $downloadToPath
 
 Copy-Item ".\template\template.dib" -Destination ".\$year\day$day\day$day.dib"
+
+Start-Process "https://adventofcode.com/$year/day/$day"

@@ -1,0 +1,38 @@
+#!fsharp
+
+open System.IO
+let lines = File.ReadAllLines("input.txt") |> Array.map double |> Array.toList
+let rec combine list =
+    match list with
+    | [] -> []
+    | x :: xs -> List.append (List.map (fun y -> x + y) xs) (combine xs)
+
+let rec check (list:double list)=
+    let combs = combine list[..24]
+    match list[25..] with
+    | [] -> double -1
+    | x :: xs -> if List.contains x combs then check xs else x
+
+let rec part1 list =
+    match list with
+    | [] -> double -1
+    | x :: xs -> if (check (x::xs)) <> -1 then (check (x::xs)) else part1 xs
+
+let step1 = part1 lines
+step1
+
+#!fsharp
+
+let rec conseqAddsTo (n:double) (acc:double list) (list:double list) =
+    match list, (List.sum acc) = n with
+    | _ , true -> acc
+    | [], _ -> []
+    | x :: xs, _ -> if (List.sum acc) > n then [] else conseqAddsTo n (x::acc) xs
+
+let rec part2 list n=
+    match list, List.length (conseqAddsTo n [] list) > 1 with
+    | [], _ -> []
+    | x :: xs, false -> part2 xs n
+    | _, true -> conseqAddsTo n [] list
+let list2 = part2 lines step1
+(List.min list2) + (List.max list2)
