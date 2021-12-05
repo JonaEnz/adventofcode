@@ -1,44 +1,25 @@
 #!fsharp
 
 open System.IO
-let lines = 
-    File.ReadAllLines("input.txt")
-
 type Point = {x:int;y:int;}
-let parsePoint (s:string) = 
-    let ps = s.Split(",")
-    {x=int(ps[0]);y=int(ps[1])}
+let parsePoint (s:string) = s.Split(",") |> fun ps -> {x=int(ps[0]);y=int(ps[1])}
 let createLine (pointArr:Point[]) =
-    let x = [pointArr[0].x; pointArr[1].x]
-    let y = [pointArr[0].y; pointArr[1].y]
-    let xs0 = [List.min x .. List.max x]
+    let x,y = [pointArr[0].x; pointArr[1].x], [pointArr[0].y; pointArr[1].y]
+    let xs0, ys = [List.min x .. List.max x], [List.min y .. List.max y]
     let xs = if  (x[0] > x[1]) = (y[0] > y[1]) then xs0 else List.rev xs0 //reverse if diagonal in / direction
-    let ys = [List.min y .. List.max y]
-    
-    if xs.Length = 1 || ys.Length = 1 then
-        List.allPairs xs ys |> List.toSeq
-    else
-        List.zip xs ys |> List.toSeq
+    let comb = if xs.Length = 1 || ys.Length = 1 then List.allPairs else List.zip 
+    comb xs ys |> List.toSeq
 
-let countIntersectingFields points =
+let countIntersectingFields points = 
     points
-    |> Seq.map createLine
-    |> Seq.collect id
+    |> Seq.collect createLine
     |> Seq.countBy id
-    |> Seq.filter (fun (_, n) -> n > 1)
+    |> Seq.filter (fun (k, n) -> n > 1)
     |> Seq.length
 
-let pointSeq = 
-    lines |> Array.toSeq |> Seq.map (fun s -> Array.map parsePoint (s.Split(" -> ")))
+let pointSeq = File.ReadAllLines("input.txt") |> Array.toSeq |> Seq.map (fun s -> Array.map parsePoint (s.Split(" -> ")))
 let part1 = 
-    pointSeq
-    |> Seq.filter (fun ps -> ps[0].x = ps[1].x || ps[0].y = ps[1].y)
+    pointSeq |> Seq.filter (fun ps -> ps[0].x = ps[1].x || ps[0].y = ps[1].y)
     |> countIntersectingFields
-part1
-
-#!fsharp
-
-let part2 =
-    pointSeq
-    |> countIntersectingFields
-part2
+printfn "Part 1: %d" part1
+printfn "Part 2: %d" (countIntersectingFields pointSeq)
