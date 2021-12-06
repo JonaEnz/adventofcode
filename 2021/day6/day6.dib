@@ -1,0 +1,12 @@
+#!fsharp
+
+open System.IO
+let lines = File.ReadAllLines("input.txt") |> Array.head |> (fun s -> s.Split(",")) |> Array.map int
+let init = Array.map (fun i -> Array.filter ((=) i) lines |> Array.length) [|0..8|]
+let genAdd zeroCount = [zeroCount;0;zeroCount] |> List.append (List.init 6 (fun _ -> 0) )
+
+let step list =
+    match list, (List.length list) = 9 with
+    | [], _ -> list
+    | _, false -> list
+    | x :: xs, true -> List.map2 (+) [0] [0]
