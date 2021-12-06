@@ -1,0 +1,23 @@
+#!fsharp
+
+open System.IO
+let lines = File.ReadAllLines("input.txt") |> Array.map int |> Array.sort |> Array.toList
+
+let part1 list =
+    0 :: list
+    |> List.pairwise
+    |> List.map (fun (a,b) -> b - a)
+    |> List.groupBy id
+    |> List.map (fun (_,g) -> List.length g)
+let res = part1 lines
+res[0] * (res[1] + 1)
+
+#!fsharp
+
+let findAll list map = Seq.map (fun e -> Map.find e map) list
+
+let buildPaths list (map:Map<int,double>) j =
+    let sum = map |> findAll (Set.intersect (Set.ofList list) (Set.ofList [j-3..j-1])) |> Seq.sum
+    Map.add j sum map
+let part2 = List.fold (fun s t -> buildPaths (0::lines) s t) (Map.ofList [(0,(double 1))]) lines
+Seq.max part2.Values
