@@ -2,16 +2,16 @@
 
 open System.IO
 let lines = File.ReadAllLines("input.txt") |> Array.head |> (fun s -> s.Split(",")) |> Array.map int
-let init = List.map (fun i -> Array.filter ((=) i) lines |> Array.length |> double) [0..8]
-let genAdd zeroCount = [zeroCount;(double 0);zeroCount] |> List.append (List.replicate 6 0)
+let init = List.map (fun i -> Array.filter ((=) i) lines |> Array.length |> float) [0..8]
+let genAdd zeroCount = [zeroCount; 0.0;zeroCount] |> List.append (List.replicate 6 0)
 
-let step list = List.map2 (+) (List.append (List.tail list) [(double 0)]) (genAdd (List.head list))
-let simulate days = List.fold (fun s _ -> step s) init [0..days-1] |> List.sum
-
-#!fsharp
-
-simulate 80
+let step list = List.map2 (+) (List.append (List.tail list) [0.0]) (genAdd (List.head list))
+let simulate start days = List.fold (fun s _ -> step s) start [0..days-1] |> List.sum
 
 #!fsharp
 
-simulate 256
+simulate init 80
+
+#!fsharp
+
+simulate init 256
