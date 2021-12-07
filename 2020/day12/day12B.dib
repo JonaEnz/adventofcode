@@ -1,0 +1,67 @@
+#!fsharp
+
+open System.IO
+let lines = File.ReadAllLines("input.txt")
+
+
+type Direction =
+| North of int
+| South of int
+| East of int
+| West of int
+
+let getInt dir =
+    match dir with
+    | North i -> i
+    | East  i -> i
+    | South i -> i
+    | West  i -> i
+
+type Action =
+| Direction of Direction
+| Left of int
+| Right of int
+| Forward of int
+
+type State = {wayX:int; wayY:int; x:int; y:int}
+let spin dir =
+    match dir with
+    | North i -> Direction.East i 
+    | East  i -> Direction.South i
+    | South i -> Direction.West i
+    | West  i -> Direction.North i
+
+let set dir i =
+    match dir with
+    | North _ -> Direction.North i 
+    | East  _ -> Direction.East i
+    | South _ -> Direction.South i
+    | West  _ -> Direction.West i
+
+let spinBy (dir:Direction) deg = List.init (deg / 90) id  |> List.fold (fun s _ -> (spin s)) dir
+
+let rec apply (action:Action) (state:State) =
+    match action with
+    | Direction (North i)-> {state with y = state.y - i}
+    | Direction (South i) -> {state with y = state.y + i}
+    | Direction (East i) -> {state with x = state.x + i}
+    | Direction (West i) -> {state with x = state.x - i}
+    | Left i -> {state with facing = (spinBy state.facing (360-i))}
+    | Right i -> {state with facing = spinBy state.facing i}
+    | Forward i -> apply (Direction (set state.facing i)) state
+
+let parseLine (s:string) =
+    match s[0], int s[1..] with
+    | 'N', i -> Direction (North i)
+    | 'S', i -> Direction (South i)
+    | 'E', i -> Direction (East i)
+    | 'W', i -> Direction (West i)
+    | 'L', i -> Left i
+    | 'R', i -> Right i
+    | 'F', i -> Forward i
+    | _ , _ -> Forward 0
+
+lines
+|> Array.map parseLine
+|> Array.fold (fun s t -> apply t s) {wayX=10; wayY=-1; x=0; y=0;}
+|> (fun s -> abs(s.x) + abs(s.y))
