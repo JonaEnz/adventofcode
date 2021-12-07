@@ -1,0 +1,14 @@
+#!fsharp
+
+open System.IO
+let lines = (File.ReadAllLines("input.txt")[0]).Split(",") |> Array.map int
+let a = lines |> Array.sort |> Array.groupBy id |> Array.map (fun (a,b) -> (a,Array.length b)) |> Array.toList
+let diff n list= list |> List.map (fun (k,i) ->  i*abs(n-k)) |> List.sum
+List.min (List.map (fun i -> diff i a) [0..a.Length-1])
+
+#!fsharp
+
+let genFuelArr n = List.mapFold (fun s t -> s,s+t+1) 0 [0..n] |> fst
+let diff2 n (fuel:int list) list= list |> List.map (fun (k,i) -> i*(fuel[abs(n-k)])) |> List.sum
+let f = genFuelArr (Array.max lines)
+List.min (List.map (fun i -> diff2 i f a) [0..a.Length-1])
