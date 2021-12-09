@@ -1,0 +1,33 @@
+#!fsharp
+
+open System.IO
+let input = File.ReadAllLines("input.txt") |> Array.toList |> List.map (fun (s:string) -> Seq.toList s |> List.map (Char.ToString >> int))
+
+#!fsharp
+
+let mask (list: int list list) = list[1][0] > list[1][1] && list[0][1] > list[1][1] && list[2][1] > list[1][1] && list[1][2] > list[1][1]
+let pad n (list: int list list) = (List.replicate (list.Length + 2) n):: List.append (List.map (fun a -> n :: List.append a [n])list) [(List.replicate (list.Length + 2) n)]
+let sliceFrom2dList a b c d (list: _ list list)= list[a..b] |> (List.map (fun l -> (l[c..d])))
+let applyMap (list: int list list) = List.map (fun x -> List.map (fun y -> sliceFrom2dList x (x+2) y (y+2) list |> mask) (List.init (list.Length - 2) id)) (List.init (list.Length - 2) id)
+
+input |> pad 10 |> applyMap |> List.map2 (List.map2 (fun i b -> if b then (i+1) else 0)) input |> List.collect id |> List.sum
+
+#!fsharp
+
+let neighbors x y ub = [(x-1,y);(x+1,y);(x,y-1);(x,y+1);] |> List.filter (fun (a,b) -> a >= 0 && b >= 0 && a < ub && b < ub)
+
+let rec bfs (list: int list list) queue (f:int->bool) visited res = 
+    match queue with
+    | [] -> res
+    | (x,y) :: xs -> 
+        if (f (list[x][y]) || List.contains (x,y) visited) 
+        then bfs list xs f ((x,y)::visited) res
+        else bfs list (List.append xs (neighbors x y list.Length |> List.filter (fun (a,b) -> List.contains (a,b) visited |> not))) f ((x,y)::visited) ((x,y)::res)
+
+let basinAt list (x,y) = bfs list [(x,y)] ((=) 9) [] []
+
+input 
+|> pad 10 
+|> applyMap 
+|> List.mapi (fun x l -> List.mapi (fun y (b:bool) -> if b then basinAt input (x,y)|> List.length  else 0) l)
+|> List.collect id |> List.sortDescending |> List.take 3 |> List.fold (fun s t -> s * t) 1

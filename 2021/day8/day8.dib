@@ -2,10 +2,7 @@
 
 open System.IO
 let lines = File.ReadAllLines("input.txt")
-let input = 
-    lines
-    |> Array.map (fun s -> s.Split() |> Array.toList) |> Array.toList
-    |> List.map (fun a -> [a[..9]; a[11..]])
+let input = lines|> Array.map (fun s -> s.Split() |> Array.toList) |> Array.toList |> List.map (fun a -> [a[..9]; a[11..]])
 
 let part1 (a: string list list) =
     let b =  List.last a |> List.map String.length
@@ -15,27 +12,27 @@ input |> List.map part1 |> List.sum
 
 #!fsharp
 
-let charFrequencyMap (l: string list) = l |> List.map Seq.toList |> List.collect id |> List.countBy id
+let charFrequencyMap = List.map Seq.toList >> List.collect id >> List.countBy id
+let getSegment i sndCond = List.find (fun (a,b) -> b=i && sndCond a b) >> fst >> Char.ToString
 
-let getSnd i sndCond tl = List.find (fun (a,b) -> b=i && sndCond a b) tl|> fst |> Char.ToString
-
-let one l= List.find (fun e -> (String.length e)=2) l|> List.ofSeq
-let four l= List.find (fun e -> (String.length e)=4) l |> List.ofSeq
+let letGetFirstStrOfLength i = List.find (fun e -> (String.length e)=i) >> List.ofSeq
+let one = letGetFirstStrOfLength 2
+let four = letGetFirstStrOfLength 4
 
 let orderSegments l =
     let cfm = charFrequencyMap (List.head l)
     [
-        getSnd 8 (fun a _ -> List.contains a (one (List.head l)) |> not) cfm;
-        getSnd 6 (fun _ _ -> true) cfm;
-        getSnd 8 (fun a _ -> List.contains a (one (List.head l))) cfm;
-        getSnd 7 (fun a _ -> List.contains a (four (List.head l))) cfm;
-        getSnd 4 (fun _ _ -> true) cfm;
-        getSnd 9 (fun _ _ -> true) cfm;
-        getSnd 7 (fun a _ -> List.contains a (four (List.head l)) |> not) cfm;
+        getSegment 8 (fun a _ -> List.contains a (one (List.head l)) |> not) cfm;
+        getSegment 6 (fun _ _ -> true) cfm;
+        getSegment 8 (fun a _ -> List.contains a (one (List.head l))) cfm;
+        getSegment 7 (fun a _ -> List.contains a (four (List.head l))) cfm;
+        getSegment 4 (fun _ _ -> true) cfm;
+        getSegment 9 (fun _ _ -> true) cfm;
+        getSegment 7 (fun a _ -> List.contains a (four (List.head l)) |> not) cfm;
     ]
 
 let getNumber (seg:string list) (s:string) =
-    match Set.ofList (List.ofSeq s |> List.map Char.ToString) with
+    match List.ofSeq s |> List.map Char.ToString |> Set.ofList with
     | a when a = Set.ofList [seg[0];seg[1];seg[2];seg[3];seg[4];seg[5];seg[6];] -> 8
     | a when a = Set.ofList [seg[0];seg[1];seg[2];seg[3];seg[5];seg[6];] -> 9
     | a when a = Set.ofList [seg[0];seg[1];seg[3];seg[4];seg[5];seg[6];] -> 6
@@ -54,6 +51,6 @@ let rec listNum rev =
     | x :: xs -> x + 10 * (listNum xs)
 
 let s = List.map (orderSegments) input
-List.mapi (fun i (l:string list list) -> List.map(fun a -> getNumber s[i] a) l[1]) input
+List.mapi (fun i (l:string list list) -> List.map(getNumber s[i]) l[1]) input
 |> List.map (List.rev >> listNum) 
 |> List.sum
