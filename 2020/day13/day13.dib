@@ -24,7 +24,7 @@ let buses2 =
     |> Array.toList
 
 
-let rec part2BruteForce (ts,p) (s,b) =
+let part2BruteForce (ts,p) (s,b) =
     Seq.initInfinite (fun i -> p * (int64 i) + ts)
     |> Seq.find (fun ts -> (ts+s) % b = 0L)
     |> (fun ts -> ts, p * b)
