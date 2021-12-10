@@ -15,3 +15,49 @@ simulate 80
 #!fsharp
 
 simulate 256
+
+#!fsharp
+
+//Alternative solution with matrices
+#r "nuget: FSPowerPack.Community"
+open Microsoft.FSharp.Math
+let m = matrix [
+    [0;1;0;0;0;0;0;0;0];
+    [0;0;1;0;0;0;0;0;0];
+    [0;0;0;1;0;0;0;0;0];
+    [0;0;0;0;1;0;0;0;0];
+    [0;0;0;0;0;1;0;0;0];
+    [0;0;0;0;0;0;1;0;0];
+    [1;0;0;0;0;0;0;1;0];
+    [0;0;0;0;0;0;0;0;1];
+    [1;0;0;0;0;0;0;0;0];
+    ]
+let tm n = Array.fold (fun s t -> s * m) m (Array.create (n-1) 0)
+let m2 = matrix (List.map (fun a -> [(float a)]) init)
+Matrix.sum ((tm 80) * m2)
+Matrix.sum ((tm 256) * m2)
+
+#!fsharp
+
+#r "nuget: MathNet.Numerics"
+#r "nuget: MathNet.Numerics.FSharp"
+open MathNet.Numerics
+open MathNet.Numerics.LinearAlgebra
+
+let m = matrix [
+    [0.;1.;0.;0.;0.;0.;0.;0.;0.];
+    [0.;0.;1.;0.;0.;0.;0.;0.;0.];
+    [0.;0.;0.;1.;0.;0.;0.;0.;0.];
+    [0.;0.;0.;0.;1.;0.;0.;0.;0.];
+    [0.;0.;0.;0.;0.;1.;0.;0.;0.];
+    [0.;0.;0.;0.;0.;0.;1.;0.;0.];
+    [1.;0.;0.;0.;0.;0.;0.;1.;0.];
+    [0.;0.;0.;0.;0.;0.;0.;0.;1.];
+    [1.;0.;0.;0.;0.;0.;0.;0.;0.];
+    ]
+let m2 = matrix (List.map (fun a -> [(float a)])   init)
+Matrix.sum ((m.Power 80) * m2)
+
+#!fsharp
+
+Matrix.sum ((m.Power 7000) * m2)
