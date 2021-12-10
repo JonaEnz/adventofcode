@@ -1,0 +1,53 @@
+#!fsharp
+
+open System.IO
+
+type Bracket =
+| Bracket of Bracket*char
+| Empty
+| Illegal of char
+
+let consume b c =
+    match c, b with
+    | _, Illegal c -> Illegal c
+    | '(', _ -> Bracket (b,')')
+    | '[', _ -> Bracket (b,']')
+    | '{', _ -> Bracket (b,'}')
+    | '<', _ -> Bracket (b,'>')
+    | a, Bracket (b2,a2) when a=a2 -> b2
+    | c, _ -> Illegal c
+
+let getScore b =
+    match b with
+    | Illegal ')' -> 3
+    | Illegal ']' -> 57
+    | Illegal '}' -> 1197
+    | Illegal '>' -> 25137
+    | _ -> 0
+
+let brackets = File.ReadAllLines("input.txt") |> Array.map (Seq.fold consume Empty)
+brackets
+|> Array.map getScore
+|> Array.sum
+
+#!fsharp
+
+let rec getScore2 b mult =
+    match b with
+    | Bracket (Bracket (b3,c2),c) -> getScore2 (Bracket (b3,c2)) (mult/5L)  + getScore2 (Bracket (Empty,c)) mult
+    | Bracket (Empty,')') -> 1L * mult
+    | Bracket (Empty,']') -> 2L * mult
+    | Bracket (Empty,'}') -> 3L * mult
+    | Bracket (Empty,'>') -> 4L * mult
+    | _ -> 0L
+
+let rec getLen acc b =
+    match b with
+    | Bracket (b, _) -> getLen (acc + 1) b
+    | _ -> acc
+let median = Array.sort >> Array.splitInto 2 >> Array.head >> Array.last
+
+brackets
+|> Array.map (fun b -> ((pown 5L ((getLen 0 b) - 1)) |> getScore2 b))
+|> Array.filter ((<>) 0L)
+|> median

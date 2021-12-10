@@ -1,0 +1,82 @@
+#!fsharp
+
+open System.IO
+let lines = File.ReadAllLines("input.txt")
+
+#!fsharp
+
+type SeatState =
+| Empty
+| Full
+
+type FieldState =
+| Seat of SeatState
+| Floor
+let chairFromChar c =
+    match c with
+    | '#' -> Seat Full
+    | 'L' -> Seat Empty
+    | _ -> Floor
+let readLine arr = arr |> Seq.map chairFromChar |> Seq.toArray
+let init = Array.map readLine lines
+
+let getOcc (arr: FieldState[][]) (neigh:((int*int) list)[][]) x y =
+    neigh[x][y]
+    |> List.filter (fun (x2,y2) -> arr[x2][y2] = (Seat Full))
+    |> List.length
+
+let step arr neigh x y=
+    let o = getOcc arr neigh x y
+    match o, o >= 4, arr[x][y] with
+    | 0, _, Seat Empty -> Seat Full
+    | _, true, Seat Full -> Seat Empty
+    | _, _, _ -> arr[x][y]
+
+let allState arr neigh =
+    let a = Array.mapi (fun x t -> Array.mapi (fun y _ -> step arr neigh x y) t) arr
+    if (Array.collect id a) = (Array.collect id arr) then None else Some (a,a)
+
+let genNeigh1 x y (arr:FieldState[][])=
+    List.allPairs [id;((+) 1); ((+) -1)] [id;((+) 1);((+) -1)]
+    |> List.tail
+    |> List.map (fun (xOp,yOp) -> (xOp x, yOp y))
+    |> List.filter (fun (x2,y2) -> not(x2 < 0 || y2 < 0 || x2 >= arr.Length || y2 >= arr[0].Length))
+    |> List.filter (fun (x2,y2) -> arr[x2][y2] <> Floor)
+
+let neigh1 = Array.mapi (fun x t -> Array.mapi (fun y _ -> genNeigh1 x y init) t) init
+//allState init
+Seq.unfold (fun i -> allState i neigh1) init |> Seq.last |> Array.collect id |> Array.filter (fun a -> a = Seat Full) |> Array.length
+
+#!fsharp
+
+let rec genNeighbor (arr: FieldState[][]) x y xOp yOp =
+    let (x2, y2) = xOp x, yOp y
+    if (x2 < 0 || y2 < 0 || x2 >= arr.Length || y2 >= arr[0].Length)
+        then None 
+    else
+        match arr[x2][y2] with
+        | Floor -> genNeighbor arr x2 y2 xOp yOp
+        | _ -> Some (x2,y2)
+
+let genNeighbors (arr: FieldState[][]) x y =
+    match arr[x][y] with
+    | Floor -> []
+    | _ -> List.allPairs [id;((+) 1); ((+) -1)] [id;((+) 1);((+) -1)]
+        |> List.tail
+        |> List.map (fun (xOp,yOp) -> genNeighbor arr x y xOp yOp)
+        |> List.choose id
+
+let step2 arr neigh x y=
+    let o = getOcc arr neigh x y
+    match o, o >= 5, arr[x][y] with
+    | 0, _, Seat Empty -> Seat Full
+    | _, true, Seat Full -> Seat Empty
+    | _, _, _ -> arr[x][y]
+
+let allState2 arr neigh =
+    let a = Array.mapi (fun x t -> Array.mapi (fun y _ -> step2 arr neigh x y) t) arr
+    if (Array.collect id a) = (Array.collect id arr) then None else Some (a,a)
+
+let neigh2 = Array.mapi (fun (x:int) t -> Array.mapi (fun (y:int) _ -> genNeighbors init x y) t) init
+
+Seq.unfold (fun i -> allState2 i neigh2) init |> Seq.last |> Array.collect id |> Array.filter (fun a -> a = Seat Full) |> Array.length

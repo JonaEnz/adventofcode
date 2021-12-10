@@ -1,0 +1,32 @@
+#!fsharp
+
+open System.IO
+let lines = File.ReadAllLines("input.txt")
+let timestamp = int lines[0]
+let buses = lines[1].Split(",") |> Array.filter ((<>) "x") |> Array.map int |> Array.toList
+
+#!fsharp
+
+buses 
+|> List.map (fun i -> (i,i - timestamp % i)) 
+|> List.minBy snd 
+|> (fun a -> (fst a) * (snd a))
+
+#!fsharp
+
+let wait n = (n - timestamp % n) % n
+
+let buses2 = 
+    lines[1].Split(",")
+    |> Array.mapi (fun i x -> (i,x)) 
+    |> Array.choose (fun (i,n) -> 
+        if n = "x" then None else Some (int64 i,int64 n)) 
+    |> Array.toList
+
+
+let part2BruteForce (ts,p) (s,b) =
+    Seq.initInfinite (fun i -> p * (int64 i) + ts)
+    |> Seq.find (fun ts -> (ts+s) % b = 0L)
+    |> (fun ts -> ts, p * b)
+
+buses2 |> List.fold part2BruteForce (0L,1L) |> fst

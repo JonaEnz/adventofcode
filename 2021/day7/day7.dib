@@ -1,0 +1,12 @@
+#!fsharp
+
+open System.IO
+let lines = (File.ReadAllLines("input.txt")[0]).Split(",") |> Array.map int
+let count = lines |> Array.sort |> Array.groupBy id |> Array.map (fun (a,b) -> (a,Array.length b)) |> Array.toList
+let diff n (fuelFun:(int -> int)) list = list |> List.map (fun (k,i) -> i*(fuelFun (abs(n-k)))) |> List.sum
+let sol ff l = List.map (fun i -> diff i ff l) [0..l.Length-1] |> List.min
+sol id count
+
+#!fsharp
+
+sol (fun f -> (f*(f+1))/2) count

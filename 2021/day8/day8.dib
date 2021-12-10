@@ -1,0 +1,56 @@
+#!fsharp
+
+open System.IO
+let lines = File.ReadAllLines("input.txt")
+let input = lines|> Array.map (fun s -> s.Split() |> Array.toList) |> Array.toList |> List.map (fun a -> [a[..9]; a[11..]])
+
+let part1 (a: string list list) =
+    let b =  List.last a |> List.map String.length
+    List.filter (fun c -> List.contains c [2;4;3;7]) b |> List.length
+
+input |> List.map part1 |> List.sum
+
+#!fsharp
+
+let charFrequencyMap = List.map Seq.toList >> List.collect id >> List.countBy id
+let getSegment i sndCond = List.find (fun (a,b) -> b=i && sndCond a b) >> fst >> Char.ToString
+
+let letGetFirstStrOfLength i = List.find (fun e -> (String.length e)=i) >> List.ofSeq
+let one = letGetFirstStrOfLength 2
+let four = letGetFirstStrOfLength 4
+
+let orderSegments l =
+    let cfm = charFrequencyMap (List.head l)
+    [
+        getSegment 8 (fun a _ -> List.contains a (one (List.head l)) |> not) cfm;
+        getSegment 6 (fun _ _ -> true) cfm;
+        getSegment 8 (fun a _ -> List.contains a (one (List.head l))) cfm;
+        getSegment 7 (fun a _ -> List.contains a (four (List.head l))) cfm;
+        getSegment 4 (fun _ _ -> true) cfm;
+        getSegment 9 (fun _ _ -> true) cfm;
+        getSegment 7 (fun a _ -> List.contains a (four (List.head l)) |> not) cfm;
+    ]
+
+let getNumber (seg:string list) (s:string) =
+    match List.ofSeq s |> List.map Char.ToString |> Set.ofList with
+    | a when a = Set.ofList [seg[0];seg[1];seg[2];seg[3];seg[4];seg[5];seg[6];] -> 8
+    | a when a = Set.ofList [seg[0];seg[1];seg[2];seg[3];seg[5];seg[6];] -> 9
+    | a when a = Set.ofList [seg[0];seg[1];seg[3];seg[4];seg[5];seg[6];] -> 6
+    | a when a = Set.ofList [seg[0];seg[1];seg[2];seg[4];seg[5];seg[6];] -> 0
+    | a when a = Set.ofList [seg[0];seg[1];seg[3];seg[5];seg[6];] -> 5
+    | a when a = Set.ofList [seg[0];seg[2];seg[3];seg[4];seg[6];] -> 2
+    | a when a = Set.ofList [seg[0];seg[2];seg[3];seg[5];seg[6];] -> 3
+    | a when a = Set.ofList [seg[1];seg[2];seg[3];seg[5];] -> 4
+    | a when a = Set.ofList [seg[0];seg[2];seg[5];] -> 7
+    | a when a = Set.ofList [seg[2]; seg[5];] -> 1
+    | _ -> (-1)
+
+let rec listNum rev = 
+    match rev with
+    | [] -> 0
+    | x :: xs -> x + 10 * (listNum xs)
+
+let s = List.map (orderSegments) input
+List.mapi (fun i (l:string list list) -> List.map(getNumber s[i]) l[1]) input
+|> List.map (List.rev >> listNum) 
+|> List.sum
