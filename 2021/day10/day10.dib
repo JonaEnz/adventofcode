@@ -1,0 +1,50 @@
+#!fsharp
+
+open System.IO
+let lines = File.ReadAllLines("input.txt") |> Array.map Seq.toList
+
+type Bracket =
+| Bracket of Bracket*char
+| Empty
+| Illegal of char
+
+let consume c b =
+    match c, b with
+    | _, Bracket.Illegal c -> Bracket.Illegal c
+    | '(', _ -> Bracket.Bracket (b,')')
+    | '[', _ -> Bracket.Bracket (b,']')
+    | '{', _ -> Bracket.Bracket (b,'}')
+    | '<', _ -> Bracket.Bracket (b,'>')
+    | a, Bracket.Bracket (b2,a2) when a=a2 -> b2
+    | c, _ -> Bracket.Illegal c
+
+
+let rec findIllegalChar b s =
+    match b, s with
+    | Empty, []               -> "", ["a"]
+    | Empty, s::ss            -> findIllegalChar (consume s b) ss
+    | Bracket (b2,c), []      -> "", []
+    | b, s :: ss              -> findIllegalChar (consume s b) ss
+    | Illegal c, _            -> Char.ToString c, []
+
+let getScore b =
+    match b with
+    | Illegal ')' -> 3
+    | Illegal '>' -> 25137
+    | Illegal ']' -> 57
+    | Illegal '}' -> 1197
+    | _ -> 0
+
+let f l = List.fold (fun s t -> consume t s) Bracket.Empty l
+Array.map f lines
+|> Array.map getScore
+|> Array.sum
+
+#!fsharp
+
+let rec getScore2 b =
+    match b with
+    | Bracket (b2,c) -> 1
+    | _ -> 0
+
+Array.map f lines
