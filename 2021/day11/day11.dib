@@ -1,0 +1,54 @@
+#!fsharp
+
+open System.IO
+let octo = 
+    File.ReadAllLines("test.txt") 
+    |> Array.map (Seq.toArray >> Array.map (Char.ToString>>int)) 
+
+type Squid = {e:int;flashed:bool;}
+
+let neighbors x y upper =
+    List.allPairs [id;((+) 1); ((+) -1)] [id;((+) 1);((+) -1)]
+    |> List.map (fun (xOp,yOp) -> (xOp x, yOp y))
+    |> List.filter (fun (x2,y2) -> not(x2 < 0 || y2 < 0 || x2 >= upper || y2 >= upper))
+
+let setInArray a x v = 
+    let a' = a |> Array.copy 
+    Array.set a' x v
+    a'
+
+let setInArray2d (a:_[][]) x y v = 
+    let a' = a |> Array.copy 
+    Array.set a' x (setInArray a'[x] y v)
+    a'
+
+let reset =
+    Array.map (Array.map (fun i -> if i>10 then 0 else i))
+
+let reset2 =
+    Array.map (Array.map (fun i -> if i<0 then 0 else i))
+
+let flash arr =
+    let neigh =
+        arr
+        |> Array.mapi (fun x l -> Array.mapi (fun y i -> if i=10 then neighbors x y (Array.length arr) else []) l)
+        |> Array.collect (Array.collect List.toArray)
+        |> Array.toList
+    let flashed= 
+        List.fold (fun s (x,y) -> setInArray2d s x y (s[x][y] + 1)) arr neigh
+    (reset flashed,Array.sum (Array.collect (Array.map (fun x -> if x>=10 then 1 else 0)) flashed))
+
+let rec simulate last arr =
+    arr
+    |> flash
+    |> (fun (a,n) -> if 0=n then last, reset a else simulate (last+n) a)
+
+List.fold (fun (ll,a) _ -> 
+    (simulate 0 (Array.map (Array.map ((+) 1)) ll)) |> (fun (i,b) -> (b,i+a)))
+    (octo,0) [1..2]
+
+#!markdown
+
+- Flash: arr -> arr increases
+- sum all arrs
+- flash those with 9 again
