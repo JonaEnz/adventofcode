@@ -1,0 +1,54 @@
+#!fsharp
+
+open System.IO
+open System.Globalization
+let lines = File.ReadAllLines("input.txt")
+type Node = {n:string;}
+type Edge = {u:Node;v:Node;}
+let isUpper node = node.n = (node.n.ToUpper CultureInfo.CurrentCulture)
+let edges =
+    lines
+    |> Array.map (fun s -> s.Split("-"))
+    |> Array.map (fun a -> {u={n=a[0]};v={n=a[1]}})
+    |> (fun a -> Array.zip (Array.map (fun n -> {u=n.v;v=n.u;}) a) a)
+    |> Array.collect (fun t -> [|fst t; snd t|])
+
+let walk path edges=
+    Array.filter (fun e -> e.u.n <> "end" && e.u.n=(List.last path) && (isUpper e.v || not (List.contains e.v.n path))) edges
+    |> Array.map (fun e -> e.v.n)
+    |> Array.map (fun n -> List.append path [n])
+    |> Array.toList 
+
+let rec traverseGraph (queue: string list list) edges = 
+    match queue with
+    | [] -> 0
+    | p :: ps -> 
+        let counter = if (List.last p)="end" then 1 else 0
+        (traverseGraph (walk p edges) edges) + (traverseGraph ps edges) + counter
+
+traverseGraph [["start"]] edges
+//walk ["start";"KX";"dy";"jb";"fw";"tx";"tr";"end"] edges
+
+#!fsharp
+
+let count e l = List.filter ((=) e) l |> List.length
+let w2filter path e= 
+    (e.u.n <> "end") && (e.v.n <> "start") &&
+    e.u.n=(List.last path) &&
+    (isUpper e.v || (not(twiceOnce path)) || (count e.v.n path) = 0)
+let twiceOnce list = list |> List.filter (fun e -> not (isUpper {n=e}))|> List.map (fun e -> count e list) |> count 2 |> ((<) 1)
+
+let walk2 path edges=
+    Array.filter (w2filter path) edges
+    |> Array.map (fun e -> e.v.n)
+    |> Array.map (fun n -> List.append path [n])
+    |> Array.toList 
+
+let rec traverseGraph2 (queue: string list list) edges = 
+    match queue with
+    | [] -> 0
+    | p :: ps -> 
+        let counter = if (List.last p)="end" then 1 else 0
+        (traverseGraph2 (walk2 p edges) edges) + (traverseGraph2 ps edges) + counter
+
+traverseGraph2 (walk ["start"] edges) edges
