@@ -28,7 +28,7 @@ let foldFieldX (field: bool list list) x =
 let foldFieldY (field : bool list list) y =
     field
     |> List.transpose
-    |> fun a -> foldFieldY a y
+    |> fun a -> foldFieldX a y
     |> List.transpose  
 
 #!fsharp
@@ -45,5 +45,5 @@ let foldStep field (s,i) =
 
 Array.fold foldStep field foldAt 
 |> List.transpose
-|> List.map (List.fold (fun s b -> if b then s+"X" else s+" ") "")
+|> List.map (List.fold (fun s b -> if b then s+"█" else s+" ") "")
 |> List.iter (printfn "%s")
