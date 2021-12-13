@@ -1,0 +1,49 @@
+#!fsharp
+
+open System.IO
+let lines = File.ReadAllLines("input.txt")
+let splitAt = Array.findIndex ((=) "") lines
+let fieldPos = lines[..splitAt-1] |> Array.map (fun s -> s.Split(",") |> fun is -> (int is[0]),(int is[1]))
+let foldAt = lines[splitAt+1..] |> Array.map (fun s -> s.Split(" ") |> Array.last |> fun s2 -> s2.Split("=") |> fun f -> (f[0], (int f[1])))
+
+let maxX = 1 + (Array.maxBy (fun (a,b) -> a) fieldPos |> fun (a,b) -> a)
+let maxY = 1 + (Array.maxBy (fun (a,b) -> b) fieldPos |> fun (a,b) -> b)
+
+let field = Array.fold (fun s (x,y) -> List.updateAt x (List.updateAt y true s[x]) s) (List.replicate maxX (List.replicate maxY false)) fieldPos
+
+#!fsharp
+
+let rec arrayFold acc (field1:bool list list,field2:bool list list) =
+    match field1, field2 with
+    | [], [] -> acc
+    | a::aas, [] -> List.append acc (a::aas)
+    | [], b::bs -> List.append acc (b::bs)
+    | a::aas, b::bs -> arrayFold (List.append acc [List.map2 (fun i j -> i || j) a b]) (aas,bs)
+
+let foldFieldX (field: bool list list) x =
+    ((List.take x field |> List.rev), (List.skip (x+1) field))
+    |> arrayFold []
+    |> List.rev
+
+let foldFieldY (field : bool list list) y =
+    field
+    |> List.transpose
+    |> fun a -> foldFieldY a y
+    |> List.transpose  
+
+#!fsharp
+
+foldFieldX field 655
+|> List.collect id |> List.filter id |> List.length
+
+#!fsharp
+
+let foldStep field (s,i) =
+    match s with
+    | "x" -> foldFieldX field i
+    | _   -> foldFieldY field i
+
+Array.fold foldStep field foldAt 
+|> List.transpose
+|> List.map (List.fold (fun s b -> if b then s+"X" else s+" ") "")
+|> List.iter (printfn "%s")
