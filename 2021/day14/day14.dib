@@ -19,16 +19,16 @@ let mapPolymer i mapping (polymer: string) =
     |> fun res -> 
         match res with
         | Some r-> [|[polymer[0]; r];[r; polymer[1]]|] |> Array.map (String.Concat >> fun s -> (s,i))
-        | None -> [||]
+        | None -> [|(polymer,i)|]
 
-let sumGrouped seq = Seq.fold (fun s (_,i) -> s + (int64 i)) 0L seq
+let sumGrouped seq = Seq.map (snd >> int64) seq |> Seq.sum
 
 let step mapping (state: ((string)*int64) seq) =
     state 
     |> Seq.map (fun (s,i) -> mapPolymer i mapping (s |> String.Concat))
     |> Seq.collect id
-    |> Seq.groupBy (fun (s,_) -> s)
-    |> Seq.map (fun (s,seq) -> (s, (sumGrouped seq)))
+    |> Seq.groupBy fst
+    |> Seq.map (fun (s,seq) -> (s, sumGrouped seq))
 
 let run i init=
     List.fold (fun s _ -> step mapping s) init [1..i]
@@ -37,7 +37,7 @@ let run i init=
     |> Seq.groupBy fst
     |> Seq.map (fun (s,seq) -> (s, (sumGrouped seq)))
     |> Seq.map (fun (_,li) -> (li + 1L) / 2L) // Adjust for double counting of characters
-    |> fun c -> (Seq.max c) - (Seq.min c)
+    |> fun c -> Seq.max c - Seq.min c
 
 #!fsharp
 
