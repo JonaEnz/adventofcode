@@ -2,7 +2,10 @@
 
 open System.IO
 let lines = File.ReadAllLines("input.txt")
-let init = lines[0]
+let init =
+    lines[0]
+    |> Seq.pairwise
+    |> Seq.map (fun (a,b) -> ([a;b] |> String.Concat, 1L))
 let mapping = 
     Array.map 
         (fun (l:string) -> l.Split(" -> ") |> fun a -> a[0], a[1][0]) 
@@ -11,26 +14,7 @@ let mapping =
 
 #!fsharp
 
-let mapPolymer mapping (polymer: string) =
-    Map.tryFind polymer mapping
-    |> fun res -> 
-        match res with
-        | Some r-> [polymer[0]; r] |> String.Concat
-        | None -> [polymer[0]] |> String.Concat
-
-let step mapping (state:string) =
-    Seq.pairwise state 
-    |> Seq.map (fun (a,b) -> mapPolymer mapping ([|a;b|] |> String.Concat))
-    |> String.Concat 
-    |> fun s -> s + (Seq.last state |> Char.ToString)
-
-List.fold (fun s _ -> step mapping s) init [1..10]
-|> Seq.countBy id
-|> fun c -> (Seq.maxBy snd c |> snd |> int)- (Seq.minBy snd c |> snd |> int)
-
-#!fsharp
-
-let mapPolymer2 i mapping (polymer: string) =
+let mapPolymer i mapping (polymer: string) =
     Map.tryFind polymer mapping
     |> fun res -> 
         match res with
@@ -39,22 +23,26 @@ let mapPolymer2 i mapping (polymer: string) =
 
 let sumGrouped seq = Seq.fold (fun s (_,i) -> s + (int64 i)) 0L seq
 
-let step2 mapping (state: ((string)*int64) seq) =
+let step mapping (state: ((string)*int64) seq) =
     state 
-    |> Seq.map (fun (s,i) -> mapPolymer2 i mapping (s |> String.Concat))
+    |> Seq.map (fun (s,i) -> mapPolymer i mapping (s |> String.Concat))
     |> Seq.collect id
     |> Seq.groupBy (fun (s,_) -> s)
     |> Seq.map (fun (s,seq) -> (s, (sumGrouped seq)))
 
-let init2 =
-    init
-    |> Seq.pairwise
-    |> Seq.map (fun (a,b) -> ([a;b] |> String.Concat, 1L))
+let run i init=
+    List.fold (fun s _ -> step mapping s) init [1..i]
+    |> Seq.map (fun (s,li) -> [|((s[0]),li);((s[1]),li)|])
+    |> Seq.collect id
+    |> Seq.groupBy fst
+    |> Seq.map (fun (s,seq) -> (s, (sumGrouped seq)))
+    |> Seq.map (fun (_,li) -> (li + 1L) / 2L) // Adjust for double counting of characters
+    |> fun c -> (Seq.max c) - (Seq.min c)
 
-List.fold (fun s _ -> step2 mapping s) init2 [1..40]
-|> Seq.map (fun (s,li) -> [|((s[0]),li);((s[1]),li)|])
-|> Seq.collect id
-|> Seq.groupBy fst
-|> Seq.map (fun (s,seq) -> (s, (sumGrouped seq)))
-|> Seq.map (fun (_,li) -> (li + 1L) / 2L) // Adjust for double counting of characters
-|> fun c -> (Seq.max c) - (Seq.min c)
+#!fsharp
+
+run 10 init
+
+#!fsharp
+
+run 40 init
