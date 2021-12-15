@@ -1,0 +1,61 @@
+#!fsharp
+
+open System.IO
+type Command =
+| Mask of string
+| Mem of int*int
+
+type State = {mask:string; mems:Map<int64,string>}
+
+let parseLine (l:string) =
+    match l with
+    | l when l[..5] = "mask =" -> Mask l[7..]
+    | _ -> Mem (l[4..].Split("] = ") |> fun a -> int a[0],int a[1])
+
+let commands = File.ReadAllLines("input.txt") |> Array.map parseLine
+
+#!fsharp
+
+let rec toBits n =
+    if n=0 then ""
+    else if n % 2 = 1
+    then (toBits (n/2)) + "1" 
+    else (toBits (n/2)) + "0"
+
+let toNumber s =
+    let rec toNumberInner s =
+        match s  with
+        | i :: is -> 
+            if i = '1'
+            then 2L * toNumberInner is + 1L
+            else 2L * toNumberInner is + 0L
+        | [] -> 0L
+    toNumberInner (Seq.toList s |> List.rev)
+
+let rec applyMask mask value =
+    match mask, value with
+    | m::ms,v::vs -> 
+        match m with
+        | '0' -> List.map (fun s -> [(Char.ToString v)+s]) (applyMask ms vs) |> List.collect id
+        | '1' -> List.map (fun s -> ["1"+s]) (applyMask ms vs) |> List.collect id
+        | _ -> List.map (fun s -> ["1"+s; "0"+s]) (applyMask ms vs) |> List.collect id
+    | _, _ -> [""]
+
+let extendto36Bit (s:string) = (List.replicate (36 - s.Length) "0" |> String.Concat) + s
+
+let initState = {mask="X"; mems = Map.empty}
+
+let applyCommand state cmd =
+    match cmd with
+    | Mask s -> {state with mask=s}
+    | Mem (t,v) -> 
+        let newVal = v |> toBits |> extendto36Bit
+        let addrs = applyMask (Seq.toList state.mask) (toBits t |> extendto36Bit |> Seq.toList)
+        let newMems = List.fold (fun s t -> Map.change (toNumber t) (fun _ -> Some newVal) s) state.mems addrs
+        {state with mems = newMems}
+
+Array.fold applyCommand initState commands
+|> fun s -> s.mems
+|> Map.values
+|> Seq.map toNumber
+|> Seq.sum
