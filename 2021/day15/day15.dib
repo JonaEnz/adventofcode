@@ -1,0 +1,112 @@
+#!fsharp
+
+open System.IO
+
+type Node = {x:int;y:int;score:int;}
+type NodePath = {n:Node; prevNode:NodePath option; currScore:int;fScore:int;}
+
+let init = 
+    File.ReadAllLines("input.txt")
+    |> Array.map (fun s -> s |> Seq.map (Char.ToString >> int) |> Seq.toArray)
+    |> Array.mapi (fun x l -> Array.mapi (fun y i -> {x=x;y=y;score=i;}) l)
+
+#!fsharp
+
+let getNeighbors (arr:Node[][]) (openList: NodePath list) node uppX uppY =
+    [(node.n.x + 1, node.n.y);(node.n.x - 1, node.n.y);(node.n.x, node.n.y + 1);(node.n.x, node.n.y - 1)]
+    |> List.filter (fun (x,y) -> x >= 0 && y >= 0 && x < uppX && y < uppY)
+    |> List.map (fun (x,y) -> {n=(arr[x][y]);prevNode=Some node; currScore= node.currScore + (arr[x][y]).score; fScore=0;})
+    |> List.filter (fun newPath ->
+        match List.tryFind (fun n -> n.n = newPath.n) openList with
+        | Some n -> newPath.currScore < n.currScore
+        | None -> true
+        )
+
+let updateOrAppend (list: NodePath list) (newPath :NodePath) =
+    let tryF = List.tryFindIndex (fun t -> t.n = newPath.n) list
+    match tryF with
+    | Some i -> List.updateAt i newPath list
+    | None -> List.append list [newPath]
+
+let h x y = x + y
+
+let expandNode arr openList closed node uppX uppY = 
+    getNeighbors arr openList node uppX uppY
+    |> List.filter (fun n -> not (List.exists (fun n2 -> n.n = n2) closed))
+    |> List.map (fun n -> {n with fScore = n.currScore + h (abs (n.n.x - uppX - 1)) (abs (n.n.y - uppY - 1))})
+    |> List.fold updateOrAppend openList
+
+let rec astar goal openList closedList (arr: Node[][]) =
+    let curr = List.minBy (fun n -> n.fScore) openList
+    let open' = List.filter ((<>) curr) openList
+    let closed' = curr.n :: closedList
+    let open'' = expandNode arr open' closedList curr arr.Length arr[0].Length
+
+    match curr, open'' with
+    | curr, _ when curr.n=goal -> Some curr
+    | _, x :: xs -> astar goal open'' closed' arr
+    | _, [] -> None
+
+let start = {n={init[0][0] with score = 0;};prevNode=None; currScore=0; fScore = 0;}
+
+let rec recursion acc nodePath =
+    match nodePath.prevNode with
+    | Some n -> recursion (acc + nodePath.n.score) n
+    | None -> acc
+
+astar (Array.last (Array.last init)) [start] [] init
+|> Option.get
+|> recursion 0
+
+#!fsharp
+
+let getScore2 (arr:Node[][]) x y xLen yLen =
+    {score=((arr[x % xLen][y % yLen]).score - 1 + (x / xLen) + (y / yLen)) % 9 + 1;x=x;y=y}
+
+let getNeighbors (arr:Node[][]) (openList: NodePath list) node uppX uppY =
+    [(node.n.x + 1, node.n.y);(node.n.x - 1, node.n.y);(node.n.x, node.n.y + 1);(node.n.x, node.n.y - 1)]
+    |> List.filter (fun (x,y) -> x >= 0 && y >= 0 && x < uppX * 5 && y < uppY * 5)
+    |> List.map (fun (x,y) -> {n=(getScore2 arr x y uppX uppY);prevNode=Some node; currScore= node.currScore + (getScore2 arr x y uppX uppY).score; fScore=0;})
+    |> List.filter (fun newPath ->
+        match List.tryFind (fun n -> n.n = newPath.n) openList with
+        | Some n -> newPath.currScore < n.currScore
+        | None -> true
+        )
+
+let updateOrAppend (list: NodePath list) (newPath :NodePath) =
+    let tryF = List.tryFindIndex (fun t -> t.n = newPath.n) list
+    match tryF with
+    | Some i -> List.updateAt i newPath list
+    | None -> List.append list [newPath]
+
+let h x y = 0
+
+let expandNode arr openList closed node uppX uppY = 
+    getNeighbors arr openList node uppX uppY
+    |> List.filter (fun n -> not (List.exists (fun n2 -> n.n = n2) closed))
+    |> List.map (fun n -> {n with fScore = n.currScore + h (abs (n.n.x - uppX - 1)) (abs (n.n.y - uppY - 1))})
+    |> List.fold updateOrAppend openList
+
+let rec astar goal openList closedList (arr: Node[][]) =
+    let curr = List.minBy (fun n -> n.fScore) openList
+    let open' = List.filter ((<>) curr) openList
+    let closed' = curr.n :: closedList
+    let open'' = expandNode arr open' closedList curr arr.Length arr[0].Length
+
+    match curr, open'' with
+    | curr, _ when curr.n=goal -> Some curr
+    | _, x :: xs -> astar goal open'' closed' arr
+    | _, [] -> None
+
+let start = {n={init[0][0] with score = 0;};prevNode=None; currScore=0; fScore = 0;}
+
+let rec recursion acc nodePath =
+    match nodePath.prevNode with
+    | Some n -> recursion (acc + nodePath.n.score) n
+    | None -> acc
+
+let (xLen, yLen) = (init.Length, (init[0]).Length)
+
+astar (getScore2 init (xLen * 5 - 1) (yLen * 5 - 1) xLen yLen) [start] [] init
+|> Option.get
+|> recursion 0
