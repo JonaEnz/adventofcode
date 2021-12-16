@@ -83,14 +83,7 @@ let rec getVersionSum pack =
     | [] -> pack.version
     | p :: ps -> pack.version + (List.map getVersionSum pack.packets |> List.sum)
 
-"620080001611562C8802118E34"
-|> Seq.map (Char.ToString >> hexToBin)
-|> String.Concat
+read
 |> readPacket
 |> fst
 |> getVersionSum
-
-// read
-// |> readPacket
-// |> fst
-// |> getVersionSum

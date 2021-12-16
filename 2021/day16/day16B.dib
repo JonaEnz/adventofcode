@@ -69,56 +69,56 @@ let rec readPacket (s:string) =
         | _   -> readNPackets s[12..] (toNumber s[1..11])
 
     match toNumber s[3..5] with
-    | i when i=4 ->
+    | 4L  ->
         let (lit, s') = readLiteral s[6..]
         {
         version= toNumber s[..2];
         pType= Literal lit; 
         packets = []
         }, s'
-    | i when i=0-> 
+    | 0L -> 
         let (packets, s') = readSubPackets s[6..]  
         {
         version= toNumber s[..2];
         pType= Literal (List.sumBy (fun p -> getLiteral p) packets); 
         packets = []
         }, s'
-    | i when i=1-> 
+    | 1L -> 
         let (packets, s') = readSubPackets s[6..]  
         {
         version= toNumber s[..2];
         pType= Literal (List.map (fun p -> getLiteral p) packets |> List.fold (*) 1L); 
         packets = []
         }, s'
-    | i when i=2-> 
+    | 2L -> 
         let (packets, s') = readSubPackets s[6..]  
         {
         version= toNumber s[..2];
         pType= Literal (List.map (fun p -> getLiteral p) packets |> List.min); 
         packets = []
         }, s'
-    | i when i=3-> 
+    | 3L -> 
         let (packets, s') = readSubPackets s[6..]  
         {
         version= toNumber s[..2];
         pType= Literal (List.map (fun p -> getLiteral p) packets |> List.max); 
         packets = []
         }, s'
-    | i when i=5-> 
+    | 5L -> 
         let (packets, s') = readSubPackets s[6..]  
         {
         version= toNumber s[..2];
         pType= Literal (if (getLiteral packets[0]) > (getLiteral packets[1]) then 1L else 0L)
         packets = []
         }, s'
-    | i when i=6-> 
+    | 6L -> 
         let (packets, s') = readSubPackets s[6..]  
         {
         version= toNumber s[..2];
         pType= Literal (if (getLiteral packets[0]) < (getLiteral packets[1]) then 1L else 0L)
         packets = []
         }, s'
-    | i when i=7-> 
+    | 7L -> 
         let (packets, s') = readSubPackets s[6..]  
         {
         version= toNumber s[..2];
@@ -132,13 +132,6 @@ let rec readPacket (s:string) =
         pType= Operator (int i); 
         packets = packets
         }, s'
-
-let rec getVersionSum pack =
-    match pack.packets with
-    | [] -> pack.version
-    | p :: ps -> pack.version + (List.map getVersionSum pack.packets |> List.sum)
-
-let rec eval pack = 1L
 
 read
 |> readPacket
