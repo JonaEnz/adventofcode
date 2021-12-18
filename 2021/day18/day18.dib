@@ -92,19 +92,57 @@ let explode root path =
         | None -> l'
     setSnail r' path (Number 0)
 
-let split s = s
+let split root path =
+    match getSnail root path with
+    | Some (Number n) -> setSnail root path (Pair (Number (n/2), Number (n / 2 + (n % 2)))) 
+    | Some (Pair (l,r)) -> root
+    | None -> root 
 
 let rec reduce root path s = 
-    match path, s with
-    | path, Pair (l,r) when (List.length path)>=4 -> Pair (explode root (List.append path [false]), r)
-    | _, Number n -> split (Number n)
-    | _, Pair (l, r) -> 
-        let l' = reduce root (List.append path [false]) l
-        let r' = reduce root (List.append path [true]) r
-        if l = l' then Pair (l,r') else Pair (l',r)
+    let rec explodeRec root path s = 
+        match path, s with
+        | path, Pair (l,r) when (List.length path) >= 4 -> explode root path
+        //| path, Number n when n >= 10 -> split root path
+        | _, Pair (l, r) -> 
+            let l' = explodeRec root (List.append path [false]) l 
+            let r' = explodeRec root (List.append path [true]) r 
+            if root = l' then r' else l'
+        | _, Number n -> root
+    let rec splitRec root path s =
+        match path, s with
+        //| path, Pair (l,r) when (List.length path) >= 4 -> explode root path
+        | path, Number n when n >= 10 -> split root path
+        | _, Pair (l, r) -> 
+            let l' = splitRec root (List.append path [false]) l 
+            let r' = splitRec root (List.append path [true]) r 
+            if root = l' then r' else l'
+        | _, Number n -> root
+    let e = explodeRec root path s
+    if e <> root then e else splitRec root path s
 
 let add l r = Pair (l,r)
 
-//add input[0] input[1] |> fun s -> reduce s [] s
-(parseLine >> fst) "[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]" 
-|> fun r -> explode r [false;true;true;true]
+let addAndReduce s s2 =
+    let added = add s s2
+    let reduced = List.unfold (fun s -> reduce s [] s |> fun s' -> if s'=s then None else Some (s',s')) added
+    match reduced with
+    | [] -> added
+    | l -> List.last l
+
+let rec snailSum s =
+    match s with
+    | Number n -> n
+    | Pair (l,r) -> 3*(snailSum l) + 2*(snailSum r)
+
+Array.reduce addAndReduce input
+//|> fun r -> reduce r [] r
+|> snailSum
+//(parseLine "[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]" |> fst)
+//|> fun r -> reduce r [] r
+
+#!fsharp
+
+Array.allPairs input input
+|> Array.filter (fun (a,b) -> a<>b)
+|> Array.toList
+|> List.map (fun (s1,s2) -> addAndReduce s1 s2)
