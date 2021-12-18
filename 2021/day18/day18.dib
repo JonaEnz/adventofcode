@@ -55,11 +55,6 @@ let traverse direction root path =
     | [] -> None
     | up -> down (not direction) root (List.append (dropLast up) [direction])
 
-let debugOption o =
-    match o with
-    | Some s -> s
-    | None -> Number -1
-
 let addToNumber root path i =
     let newS =
         match getSnail root path with
@@ -75,11 +70,11 @@ let getNumber s dir =
     | Pair (Number n, r) -> n
     | _ -> 0
 
-let removeSnail root path =
-    setSnail root (dropLast path) (getSnail root (List.append (dropLast path) [List.last path|> not]) |> debugOption)
-
 let explode root path = 
-    let s = getSnail root path |> debugOption
+    let s = 
+        match getSnail root path with
+        | Some r -> r
+        | None -> root
     let left = traverse false root path
     let right = traverse true root path
     let l' = 
@@ -101,33 +96,29 @@ let split root path =
 let rec reduce root path s = 
     let rec explodeRec root path s = 
         match path, s with
-        | path, Pair (l,r) when (List.length path) >= 4 -> explode root path
-        //| path, Number n when n >= 10 -> split root path
+        | path, Pair (l,r) when (List.length path) >= 4 -> explode root path |> Some
         | _, Pair (l, r) -> 
             let l' = explodeRec root (List.append path [false]) l 
             let r' = explodeRec root (List.append path [true]) r 
-            if root = l' then r' else l'
-        | _, Number n -> root
+            if Option.isSome l' then l' else r'
+        | _, Number n -> None
     let rec splitRec root path s =
         match path, s with
-        //| path, Pair (l,r) when (List.length path) >= 4 -> explode root path
-        | path, Number n when n >= 10 -> split root path
+        | path, Number n when n >= 10 -> split root path |> Some
         | _, Pair (l, r) -> 
             let l' = splitRec root (List.append path [false]) l 
             let r' = splitRec root (List.append path [true]) r 
-            if root = l' then r' else l'
-        | _, Number n -> root
+            if Option.isSome l' then l' else r'
+        | _, Number n -> None
     let e = explodeRec root path s
-    if e <> root then e else splitRec root path s
+    if Option.isSome e then e else splitRec root path s
 
 let add l r = Pair (l,r)
 
 let addAndReduce s s2 =
     let added = add s s2
-    let reduced = List.unfold (fun s -> reduce s [] s |> fun s' -> if s'=s then None else Some (s',s')) added
-    match reduced with
-    | [] -> added
-    | l -> List.last l
+    let reduced = Seq.unfold (fun s -> reduce s [] s |> Option.bind (fun s -> Some (s,s))) added
+    if Seq.isEmpty reduced then added else Seq.last reduced
 
 let rec snailSum s =
     match s with
@@ -135,14 +126,12 @@ let rec snailSum s =
     | Pair (l,r) -> 3*(snailSum l) + 2*(snailSum r)
 
 Array.reduce addAndReduce input
-//|> fun r -> reduce r [] r
 |> snailSum
-//(parseLine "[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]" |> fst)
-//|> fun r -> reduce r [] r
 
 #!fsharp
 
-Array.allPairs input input
-|> Array.filter (fun (a,b) -> a<>b)
-|> Array.toList
-|> List.map (fun (s1,s2) -> addAndReduce s1 s2)
+input |> Array.toSeq
+|> fun l -> Seq.allPairs l l
+|> Seq.filter (fun (a,b) -> a<>b)
+|> Seq.map (fun (s1,s2) -> addAndReduce s1 s2 |> snailSum)
+|> Seq.max
