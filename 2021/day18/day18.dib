@@ -1,0 +1,110 @@
+#!fsharp
+
+open System.IO
+open System.Text.RegularExpressions
+
+type Snailfish =
+| Pair of Snailfish*Snailfish
+| Number of int
+
+let rec parseLine l = 
+    let readNumber l =
+        let s = Seq.takeWhile (fun c -> c <> ',' && c <> ']') l
+        let n = 
+            s |> Seq.map Char.ToString
+            |> String.concat ""
+            |> int |> Number
+        (n, Seq.skip (Seq.length s) l)
+    
+    if '[' = Seq.head l
+    then 
+        let (first, l') = parseLine (Seq.tail l) 
+        let (second, l'') = parseLine (Seq.tail l')
+        Pair (first,second), Seq.tail l''
+    else readNumber l
+
+let input = 
+    File.ReadAllLines("input.txt")
+    |> Array.map (parseLine >> fst)
+
+#!fsharp
+
+let rec getSnail root path =
+    match root, path with
+    | s, [] -> Some s
+    | Pair (l,r), p :: ps -> if p then getSnail r ps else getSnail l ps
+    | _ , _ -> None
+
+let dropLast l = l |> List.rev |> List.tail |> List.rev
+
+let rec setSnail root path value =
+    match path, root with
+    | [], _ -> value
+    | p :: ps, Pair (l,r) when p -> Pair (l, setSnail r ps value)
+    | p :: ps, Pair (l,r) -> Pair (setSnail l ps value, r)
+    | _, _ -> root
+
+let traverse direction root path =
+    let up = path |> List.rev |> List.skipWhile ((=) direction) |> List.rev
+    let rec down direction root path =
+        match getSnail root path with
+        | Some (Pair (l,r)) -> down direction root (List.append path [direction])
+        | Some (Number n) -> Some path
+        | None -> None
+    match up with
+    | [] -> None
+    | up -> down (not direction) root (List.append (dropLast up) [direction])
+
+let debugOption o =
+    match o with
+    | Some s -> s
+    | None -> Number -1
+
+let addToNumber root path i =
+    let newS =
+        match getSnail root path with
+        | Some (Number n) -> Number (i+n)
+        | Some (Pair (l,r)) -> Number i
+        | None -> Number i
+    setSnail root path newS
+
+let getNumber s dir =
+    match s with
+    | Number n -> n
+    | Pair (l, Number n) when dir -> n
+    | Pair (Number n, r) -> n
+    | _ -> 0
+
+let removeSnail root path =
+    setSnail root (dropLast path) (getSnail root (List.append (dropLast path) [List.last path|> not]) |> debugOption)
+
+let explode root path = 
+    let s = getSnail root path |> debugOption
+    let left = traverse false root path
+    let right = traverse true root path
+    let l' = 
+        match left with
+        | Some p -> addToNumber root p (getNumber s false)
+        | None -> root
+    let r' =
+        match right with
+        | Some p -> addToNumber l' p (getNumber s true)
+        | None -> l'
+    setSnail r' path (Number 0)
+
+let split s = s
+
+let rec reduce root path s = 
+    match path, s with
+    | path, Pair (l,r) when (List.length path)>=4 -> Pair (explode root (List.append path [false]), r)
+    | _, Number n -> split (Number n)
+    | _, Pair (l, r) -> 
+        let l' = reduce root (List.append path [false]) l
+        let r' = reduce root (List.append path [true]) r
+        if l = l' then Pair (l,r') else Pair (l',r)
+
+let add l r = Pair (l,r)
+
+//add input[0] input[1] |> fun s -> reduce s [] s
+(parseLine >> fst) "[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]" 
+|> fun r -> explode r [false;true;true;true]
