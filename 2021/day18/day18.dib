@@ -75,14 +75,12 @@ let explode root path =
         match getSnail root path with
         | Some r -> r
         | None -> root
-    let left = traverse false root path
-    let right = traverse true root path
     let l' = 
-        match left with
+        match traverse false root path with
         | Some p -> addToNumber root p (getNumber s false)
         | None -> root
     let r' =
-        match right with
+        match traverse true root path with
         | Some p -> addToNumber l' p (getNumber s true)
         | None -> l'
     setSnail r' path (Number 0)
@@ -133,5 +131,5 @@ Array.reduce addAndReduce input
 input |> Array.toSeq
 |> fun l -> Seq.allPairs l l
 |> Seq.filter (fun (a,b) -> a<>b)
-|> Seq.map (fun (s1,s2) -> addAndReduce s1 s2 |> snailSum)
+|> Seq.map (fun i -> i ||> addAndReduce |> snailSum)
 |> Seq.max

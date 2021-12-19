@@ -1,0 +1,79 @@
+#!fsharp
+
+open System.IO
+let lines = File.ReadAllLines("input.txt")
+
+type Coords = {x:int;y:int;z:int}
+type Scanner = {coords:Coords list;}
+
+let parseScanner (arr: string[]) =
+    let s = Array.takeWhile (fun (s:string) -> s="" |> not) (arr[1..])
+    let arr' = arr[s.Length+2..]
+    let scanners = 
+        Array.map (fun (l:string) -> l.Split(",") |> fun (l) -> {x=int l[0];y=int l[1];z=int l[2]}) s
+        |> Array.toList |> fun l -> {coords=l;}
+    scanners,arr'
+let scanners = Array.unfold (fun s -> if Array.length s <= 1 then None else Some (parseScanner s)) lines |> Array.toList
+
+#!fsharp
+
+let rotate s =
+    let rotate s = [s; {x =(s.z);y=s.y; z=(-s.x)}; {x =(-s.z); y=s.y; z=(s.x);}; {x =(-s.x); y=s.y; z=(-s.z);}]
+    let xTop   s = [{x=(s.y);y= (s.x); z=(-s.z)}; {x=(s.y);y= (-s.x); z=(s.z)}]
+    let yTop   s = [{x=(s.x);y= (s.y); z=(s.z)}; {x=(s.x);y= (-s.y); z=(-s.z)}]
+    let zTop   s = [{x=(s.y);y= (s.z); z=(s.x)}; {x=(s.y);y= -(s.z); z=(-s.x)}]
+    [s]
+    |> fun l -> List.append (List.append (List.map xTop l) (List.map yTop l)) (List.map zTop l)
+    |> List.collect id
+    |> List.map rotate |> List.collect id
+
+#!fsharp
+
+let rotateAll coords =
+    List.map rotate coords
+    |> List.transpose
+
+let subFromAll c coords = List.map (fun c -> {(c:Coords) with x= c.x - coords.x; y=c.y - coords.y; z=c.z - coords.z;}) c
+let addToAll c coords = List.map (fun c -> {(c:Coords) with x= c.x + coords.x; y=c.y + coords.y; z=c.z + coords.z;}) c
+
+let normalize s = subFromAll s s[0]
+
+let getMatch total c2 = 
+    //printfn "%A" total[0]
+    //printfn "%A" total'
+    let c2' = List.map (fun c -> subFromAll c2 c) c2
+    List.allPairs total c2'
+    |> List.filter (fun (t,s) -> Set.intersect (Set.ofList (snd t)) (Set.ofList s)|> Seq.length |> (<=) 12)
+    |> fun l -> 
+        if List.isEmpty l then None 
+        else
+            let (t,s) = List.head l
+            addToAll s (fst t) |> Some
+
+let merge s1 s2 = Set.union (Set.ofList s1) (Set.ofList s2) |> Seq.toList
+
+let addToTotal total add =
+    let total' = List.map (fun t -> t, subFromAll total t) total
+    let m = List.choose (fun s -> getMatch total' s) add
+    match m with
+    | [] -> None
+    | m :: ms -> Some (merge total m)
+
+let iterateQueue total queue =
+    List.map (fun s ->s, rotateAll s.coords) queue
+    |> List.fold (fun (total,q) t -> 
+        match addToTotal total (snd t) with
+        | Some total' -> (normalize total'), q
+        | None -> total, (fst t) :: q
+        ) 
+        (total, [])
+
+let rec iterateAll total queue=
+    printfn "%d" (List.length queue)
+    let ite = iterateQueue total queue
+    match snd ite, List.length (snd ite) < List.length queue with
+    | _ :: _, true -> iterateAll (fst ite) (snd ite)
+    | _, _ -> fst ite
+
+let solution = iterateAll (normalize scanners[0].coords) scanners
+List.length solution
