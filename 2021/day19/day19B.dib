@@ -1,7 +1,7 @@
 #!fsharp
 
 open System.IO
-let lines = File.ReadAllLines("test.txt")
+let lines = File.ReadAllLines("input.txt")
 
 type Coords = {x:int;y:int;z:int}
 type Scanner = {coords:Coords list;}
@@ -33,36 +33,38 @@ let rotateAll coords =
     List.map rotate coords
     |> List.transpose
 
+
 let subFromAll c coords = List.map (fun c -> {(c:Coords) with x= c.x - coords.x; y=c.y - coords.y; z=c.z - coords.z;}) c
 let addToAll c coords = List.map (fun c -> {(c:Coords) with x= c.x + coords.x; y=c.y + coords.y; z=c.z + coords.z;}) c
 
 let normalize s = subFromAll s s[0]
 
 let getMatch total c2 = 
+
     let c2' = List.map (fun c -> c, subFromAll c2 c) c2
     List.allPairs total c2'
-    |> List.filter (fun (t,s) -> Set.intersect (Set.ofList (snd t)) (Set.ofList (snd s))|> Seq.length |> (<=) 12)
+    |> List.tryFind (fun (t,s) -> Set.intersect (Set.ofList (snd t)) (Set.ofList (snd s))|> Seq.length |> (<=) 12) 
     |> fun l -> 
-        if List.isEmpty l then None 
-        else
-            let (t,s) = List.head l
-            Some (addToAll (snd s) (fst t), subFromAll [fst t] (fst s) |> List.head)
+        match l with
+        | None -> None 
+        | Some ((t1,_),s) ->
+            Some (addToAll (snd s) t1, subFromAll [t1] (fst s) |> List.head)
 
 let merge s1 s2 = Set.union (Set.ofList s1) (Set.ofList s2) |> Seq.toList
 
 let addToTotal total add =
     let total' = List.map (fun t -> t, subFromAll total t) total
-    let m = List.choose (fun s -> getMatch total' s) add
+    let m = List.tryPick (fun s -> getMatch total' s) add
     match m with
-    | [] -> None
-    | m :: ms -> Some (merge total (fst m), snd m)
+    | None -> None
+    | Some m -> Some (merge total (fst m), snd m)
 
 let iterateQueue total pos queue =
     List.map (fun s ->s, rotateAll s.coords) queue
-    |> List.fold (fun (total,pos,q) t -> 
-        match addToTotal total (snd t) with
-        | Some total' -> (normalize (fst total')), (snd total') :: pos, q
-        | None -> total, pos , (fst t) :: q
+    |> List.fold (fun (total,pos,q) (scanner, rots) -> 
+        match addToTotal total rots with
+        | Some total' -> (normalize (fst total')), (subFromAll (snd total'::pos) ((fst total')[0])), q
+        | None -> total, pos , scanner :: q
         ) 
         (total, pos, [])
 
@@ -73,12 +75,10 @@ let rec iterateAll total pos queue=
     | _ :: _, true -> iterateAll total' pos' queue'
     | _, _ -> total', pos'
 
-let solution = iterateAll (normalize scanners[0].coords) [] scanners
-printfn "Part1: %d" (solution |> snd |> List.length)
+let (total, relScannerPos) = iterateAll (normalize scanners[0].coords) [] scanners
+printfn "Part1: %d" (total |> List.length)
 
-solution
-|> fst
+relScannerPos
 |> fun l -> List.allPairs l l
-|> List.filter (fun (a,b) -> a<>b)
 |> List.map (fun (a,b) -> abs (a.x-b.x) + abs (a.y-b.y) + abs (a.z-b.z))
 |> List.max
