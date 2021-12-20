@@ -1,0 +1,48 @@
+#!fsharp
+
+open System.IO
+let lines = File.ReadAllLines("input.txt")
+let enhanceInput = lines[0] |> Seq.map ((=) '#') |> Seq.toArray
+let initImage = Array.map (fun s -> s |> Seq.toList |> List.map ((=) '#')) lines[2..] |> Array.toList
+
+#!fsharp
+
+let pad n (list: 'a list list) = 
+    (List.replicate (list[0].Length + 2) n):: 
+    List.append 
+        (List.map (fun a -> n :: List.append a [n])list) 
+        [(List.replicate (list.Length + 2) n)]
+let padNTimes n e list = List.fold (fun s _ -> pad e s) list [1..n]
+
+let mask (enhance:bool[]) (ll: bool list list) = 
+    List.allPairs [0;1;2] [0;1;2]
+    |> List.map (fun (x,y) -> ll[x][y])
+    //|> List.map ((=) '#')
+    |> List.rev
+    |> List.fold (fun (a,b) t -> if t then (a+b,2*b) else (a,2*b)) (0,1)
+    |> fst
+    |> fun i -> enhance[i]
+
+let step (enhance: bool[]) pad ll=
+    let pad' = if pad then enhance[511] else enhance[0]
+    let ll' = padNTimes 2 pad ll
+    (List.replicate (ll'.Length - 2) (List.replicate (ll'[0].Length - 2) 0))
+    |> List.mapi (fun x l -> List.mapi (fun y _ -> (ll'[(x+0)..(x+2)] |> List.map (fun (a:bool list) -> a[(y+0)..(y+2)]) |> mask enhance)) l)
+    |> fun a -> pad', a
+
+
+let enhanceNTimes n startImage enhanceString =
+    let step' = step enhanceString
+    List.fold (fun (pad, image) _ -> step' pad image) (false ,startImage) [1..n]
+    |> snd
+    |> List.collect id
+    |> List.filter id
+    |> List.length
+
+#!fsharp
+
+enhanceNTimes 2 initImage enhanceInput
+
+#!fsharp
+
+enhanceNTimes 50 initImage enhanceInput
