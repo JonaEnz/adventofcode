@@ -1,0 +1,78 @@
+#!fsharp
+
+open System.IO
+open System.Text.RegularExpressions
+let lines = File.ReadAllLines("input.txt")
+
+type Cube = {on:int64;lx:int64;ly:int64;lz:int64;ux:int64;uy:int64;uz:int64;}
+
+let parseLine (l:string) =
+    let s1 = l.Split(" ")
+    let onoff = if s1[0]="on" then 1L else -1L
+    let coords = 
+        (s1[1]).Split(",")
+        |> Array.map (fun s2 -> s2.Split("..") |> fun a -> int64 (a[0][2..]), (int64 a[1]))
+    {on=onoff; lx=fst coords[0]; ly=fst coords[1]; lz=fst coords[2]; ux=snd coords[0]; uy=snd coords[1]; uz=snd coords[2];}
+let input = 
+    Array.mapi (fun i l -> parseLine l) lines 
+    |> Array.toList
+
+#!fsharp
+
+let naiveCube = 
+    List.replicate 100 false |> List.replicate 100 |> List.replicate 100
+
+let filteredCubes cs = List.filter (fun c -> c.lx< -50 || c.ly< -50||c.lz< -50||c.ux>50||c.uy>50||c.uz>50 |> not) cs
+
+let getLastChangeAt x y z cubes =
+    cubes
+    |> List.rev
+    |> List.tryPick (fun c -> if x >= c.lx && y >= c.ly && z >= c.lz && x <= c.ux && y <= c.uy && z <= c.uz then Some c.on else None)
+
+let fci = filteredCubes input
+List.map (fun x -> List.map (fun y -> List.map (fun z -> (x,y,z)) [-50..50] ) [-50..50]) [-50..50]
+|> List.collect id
+|> List.collect id
+|> List.map (fun (x,y,z) -> (x,y,z), getLastChangeAt x y z fci)
+|> List.map (fun ((x,y,z),b) -> 
+    match b with
+    | Some b -> (x,y,z,b)
+    | None -> (x,y,z,-1L)
+    )
+|> List.filter (fun (x,y,z,b) -> b=1L)
+|> List.length
+
+#!fsharp
+
+let getSize c =
+    (c.ux - c.lx + 1L) * (c.uy - c.ly+ 1L) * (c.uz - c.lz+ 1L)
+
+let getIntersecting c1 c2 = 
+    (max 0L (min c1.ux c2.ux - max c1.lx c2.lx + 1L))
+    * (max 0L (min c1.uy c2.uy - max c1.ly c2.ly+ 1L))
+    * (max 0L (min c1.uz c2.uz - max c1.lz c2.lz+ 1L))
+
+let rec combinations list =
+    match list with
+    | x :: xs -> List.map (fun y -> (x,y)) xs @ combinations xs
+    | [] -> []
+
+let intersect c1 c2=
+    if 0L = getIntersecting c1 c2
+    then None
+    else 
+        {
+            on=(-1L * c2.on);
+            lx=max c1.lx c2.lx; ux=min c1.ux c2.ux;
+            ly=max c1.ly c2.ly; uy=min c1.uy c2.uy;
+            lz=max c1.lz c2.lz; uz=min c1.uz c2.uz;
+        } |> Some
+
+let part2 cubes=
+    List.fold (fun cs c ->
+        List.choose (fun c2 -> intersect c c2) cs
+        |> fun c' -> if c.on=1L then c::c' else c'
+        |> List.append cs) [] cubes
+
+part2 input
+|> List.sumBy (fun c -> getSize c * c.on)
