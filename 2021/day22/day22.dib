@@ -19,28 +19,28 @@ let input =
 
 #!fsharp
 
-let naiveCube = 
-    List.replicate 100 false |> List.replicate 100 |> List.replicate 100
+// let naiveCube = 
+//     List.replicate 100 false |> List.replicate 100 |> List.replicate 100
 
-let filteredCubes cs = List.filter (fun c -> c.lx< -50 || c.ly< -50||c.lz< -50||c.ux>50||c.uy>50||c.uz>50 |> not) cs
+// let filteredCubes cs = List.filter (fun c -> c.lx< -50 || c.ly< -50||c.lz< -50||c.ux>50||c.uy>50||c.uz>50 |> not) cs
 
-let getLastChangeAt x y z cubes =
-    cubes
-    |> List.rev
-    |> List.tryPick (fun c -> if x >= c.lx && y >= c.ly && z >= c.lz && x <= c.ux && y <= c.uy && z <= c.uz then Some c.on else None)
+// let getLastChangeAt x y z cubes =
+//     cubes
+//     |> List.rev
+//     |> List.tryPick (fun c -> if x >= c.lx && y >= c.ly && z >= c.lz && x <= c.ux && y <= c.uy && z <= c.uz then Some c.on else None)
 
-let fci = filteredCubes input
-List.map (fun x -> List.map (fun y -> List.map (fun z -> (x,y,z)) [-50..50] ) [-50..50]) [-50..50]
-|> List.collect id
-|> List.collect id
-|> List.map (fun (x,y,z) -> (x,y,z), getLastChangeAt x y z fci)
-|> List.map (fun ((x,y,z),b) -> 
-    match b with
-    | Some b -> (x,y,z,b)
-    | None -> (x,y,z,-1L)
-    )
-|> List.filter (fun (x,y,z,b) -> b=1L)
-|> List.length
+// let fci = filteredCubes input
+// List.map (fun x -> List.map (fun y -> List.map (fun z -> (x,y,z)) [-50..50] ) [-50..50]) [-50..50]
+// |> List.collect id
+// |> List.collect id
+// |> List.map (fun (x,y,z) -> (x,y,z), getLastChangeAt x y z fci)
+// |> List.map (fun ((x,y,z),b) -> 
+//     match b with
+//     | Some b -> (x,y,z,b)
+//     | None -> (x,y,z,-1L)
+//     )
+// |> List.filter (fun (x,y,z,b) -> b=1L)
+// |> List.length
 
 #!fsharp
 
@@ -52,22 +52,33 @@ let getIntersecting c1 c2 =
     * (max 0L (min c1.uy c2.uy - max c1.ly c2.ly+ 1L))
     * (max 0L (min c1.uz c2.uz - max c1.lz c2.lz+ 1L))
 
-let intersect c1 c2=
+let intersect c1 c2 onoff=
     if 0L = getIntersecting c1 c2
     then None
     else 
         {
-            on=(-1L * c2.on);
+            on=(onoff);
             lx=max c1.lx c2.lx; ux=min c1.ux c2.ux;
             ly=max c1.ly c2.ly; uy=min c1.uy c2.uy;
             lz=max c1.lz c2.lz; uz=min c1.uz c2.uz;
         } |> Some
 
-let part2 cubes=
+let combine cubes=
     List.fold (fun cs c ->
-        List.choose (fun c2 -> intersect c c2) cs
+        List.choose (fun c2 -> intersect c c2 (-1L*c2.on)) cs
         |> fun c' -> if c.on=1L then c::c' else c'
         |> List.append cs) [] cubes
 
-part2 input
+#!fsharp
+
+let part1Cube = {on=1L; lx= -50L; ly= -50L; lz= -50L; ux=50L; uy=50L; uz=50L;}
+
+input
+|> List.choose (fun c -> intersect c part1Cube c.on)
+|> combine
+|> List.sumBy (fun c -> getSize c * c.on)
+
+#!fsharp
+
+combine input
 |> List.sumBy (fun c -> getSize c * c.on)
