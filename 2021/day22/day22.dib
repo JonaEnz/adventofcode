@@ -52,11 +52,6 @@ let getIntersecting c1 c2 =
     * (max 0L (min c1.uy c2.uy - max c1.ly c2.ly+ 1L))
     * (max 0L (min c1.uz c2.uz - max c1.lz c2.lz+ 1L))
 
-let rec combinations list =
-    match list with
-    | x :: xs -> List.map (fun y -> (x,y)) xs @ combinations xs
-    | [] -> []
-
 let intersect c1 c2=
     if 0L = getIntersecting c1 c2
     then None
