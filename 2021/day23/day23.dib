@@ -1,0 +1,7 @@
+#!markdown
+
+# Notes
+- Solved by hand
+- Solution probably could be done with tree
+- DFS, estimate cost by taking cost to move to first space in destination room ignoring all other pods
+- Eliminate paths with higher cost than current best solution
