@@ -3,3 +3,5 @@ fsharp-cheatsheet.pdf
 .fake
 .ionide
 .session
+bin
+obj

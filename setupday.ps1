@@ -1,4 +1,4 @@
-﻿param($day, [String]$year="2021")
+﻿param($day, [String]$year = "2023")
 
 if (!(Test-Path "./.session")) {
     throw "No /.session found"
@@ -6,14 +6,14 @@ if (!(Test-Path "./.session")) {
 
 $sessionCode = Get-Content ".\.session"
 
-if ($day -eq $null) {
-  $day = (Get-Date).Day
+if ($null -eq $day) {
+    $day = (Get-Date).Day
 }
   
-$downloadToPath = ".\$year\day$day\input.txt"
-if (!(Test-Path ".\$year\day$day")) {
-  New-Item -Path "." -name "$year\day$day" -ItemType "directory" 
-}
+$downloadToPath = ".\$year\Inputs\$day.txt"
+# if (!(Test-Path ".\$year\day$day")) {
+#     New-Item -Path "." -name "$year\day$day" -ItemType "directory" 
+# }
 $remoteFileLocation = "https://adventofcode.com/$year/day/$day/input"
   
 $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
@@ -28,6 +28,6 @@ $session.Cookies.Add($cookie);
 
 Invoke-WebRequest $remoteFileLocation -WebSession $session -TimeoutSec 900 -OutFile $downloadToPath
 
-Copy-Item ".\template\template.dib" -Destination ".\$year\day$day\day$day.dib"
+Copy-Item ".\template\template.cs" -Destination ".\$year\Day$day.cs"
 
 Start-Process "https://adventofcode.com/$year/day/$day"

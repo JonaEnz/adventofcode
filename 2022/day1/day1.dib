@@ -1,0 +1,19 @@
+#!fsharp
+
+open System.IO
+let lines = File.ReadAllLines("input.txt") |> Array.toList
+
+let rec recursive (old : List<string>) l (sum:int) = 
+    match old, old[0] with
+    | [_], _ -> old, l, sum
+    | _, "" -> recursive old[1..] (List.append l [sum]) 0
+    | _, i ->  recursive old[1..] l  ((int i) + sum)
+
+let _, a, _ =  recursive lines [] 0
+List.max a
+
+#!fsharp
+
+List.sortByDescending id a
+|> List.take 3
+|> List.sum
