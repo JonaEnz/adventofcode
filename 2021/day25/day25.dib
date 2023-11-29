@@ -1,0 +1,50 @@
+#!fsharp
+
+open System.IO
+let lines = File.ReadAllLines("input.txt")
+type Cucumber =
+| Empty
+| South
+| East
+
+let parseCucumber c =
+    match c with
+    | '>' -> East
+    | 'v' -> South
+    | _ -> Empty
+let init = 
+    Array.map (fun l -> 
+        l 
+        |> Seq.map parseCucumber 
+        |> Seq.toList) 
+        lines |> Array.toList
+
+#!fsharp
+
+let nextField sizeX sizeY x y c =
+    match c with
+    | Empty -> x,y
+    | East -> x, (y+1)%sizeY
+    | South -> (x+1)%sizeX, y
+
+let stepAllWith cType list =
+    let filtered = 
+        List.mapi (fun x l -> List.mapi (fun y (c:Cucumber) -> x,y,c) l) list
+        |> List.collect id
+        |> List.filter (fun (_,_,c) -> c=cType)
+        |> List.map (fun (x,y,c) -> x,y,nextField list.Length list[0].Length x y c)
+        |> List.filter (fun (xOld, yOld, (xNew,yNew)) -> list[xNew][yNew]=Empty )
+    filtered
+    |> List.fold (fun l (_, _, (xNew,yNew)) -> List.updateAt xNew (List.updateAt yNew cType l[xNew]) l) list
+    |> fun s -> List.fold (fun l (x,y,_) -> List.updateAt x (List.updateAt y Empty l[x]) l) s filtered
+
+let combinedStep list =
+    stepAllWith East list
+    |> stepAllWith South
+
+let rec part1 i list =
+    let newList = combinedStep list
+    if newList=list
+    then i+1
+    else part1 (i+1) newList
+part1 0 init

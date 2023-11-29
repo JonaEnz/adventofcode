@@ -1,9 +1,8 @@
-﻿param($day, [String]$year = "2023")
+﻿param($day, [String]$year = (Get-Date).Year)
 
 if (!(Test-Path "./.session")) {
     throw "No /.session found"
 }
-
 $sessionCode = Get-Content ".\.session"
 
 if ($null -eq $day) {
