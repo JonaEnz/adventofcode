@@ -2,6 +2,7 @@ verification
 fsharp-cheatsheet.pdf
 .fake
 .ionide
+.vscode/**
 .session
 bin
 obj
