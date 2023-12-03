@@ -1,62 +1,62 @@
 ﻿namespace AdventOfCode;
 
-public class Day3Field
+public class Day3Field : Grid2D<char>
 {
-    public List<List<char>> Field { get; set; }
-
-    public Day3Field()
+    public static Day3Field Parse(string input, string separator, Func<string, char> parseField)
     {
-        Field = new List<List<char>>();
-    }
+        var grid = new Day3Field();
 
-    public char Get(int x, int y)
-    {
-        if (y >= Field.Count || y < 0 || x >= Field[y].Count || x < 0)
-            return '.';
-        return Field[x][y];
+        foreach (var line in input.Split('\n'))
+        {
+            grid.Grid.Add([.. line]);
+        }
+        grid.Default = '.';
+        return grid;
     }
-    private bool isPart(char c) => !char.IsDigit(c) && c != '.';
-    public int Height => Field.Count;
-    public int Width => Field[0].Count;
-    public List<Tuple<int, int, int>> GearHack = new List<Tuple<int, int, int>>(); // x,y,digit
-    private int getDigit(int x, int yStart, int yEnd)
+    public new char Get(int x, int y)
+    {
+        return base.Get(y, x);
+    }
+    private static bool IsPart(char c) => !char.IsDigit(c) && c != '.';
+    public List<Tuple<int, int, int>> GearHack = []; // x,y,digit
+    private int GetDigit(int x, int yStart, int yEnd)
     {
         var digit = "";
         for (int y = yStart; y <= yEnd; y++)
         {
             digit += Get(x, y).ToString();
         }
-        return Int32.Parse(digit);
+        return int.Parse(digit);
     }
     public int CheckDigit(int x, int yStart, int yEnd)
     {
         var res = 0;
         for (int y = yStart - 1; y <= yEnd + 1; y++)
         {
-            if (isPart(Get(x - 1, y)) || isPart(Get(x + 1, y)))
+            if (IsPart(Get(x - 1, y)) || IsPart(Get(x + 1, y)))
             {
                 if (Get(x - 1, y) == '*')
                 {
-                    GearHack.Add(new Tuple<int, int, int>(x - 1, y, getDigit(x, yStart, yEnd)));
+                    GearHack.Add(new Tuple<int, int, int>(x - 1, y, GetDigit(x, yStart, yEnd)));
                 }
                 if (Get(x + 1, y) == '*')
                 {
-                    GearHack.Add(new Tuple<int, int, int>(x + 1, y, getDigit(x, yStart, yEnd)));
+                    GearHack.Add(new Tuple<int, int, int>(x + 1, y, GetDigit(x, yStart, yEnd)));
                 }
-                res = getDigit(x, yStart, yEnd);
+                res = GetDigit(x, yStart, yEnd);
             }
         }
-        if (isPart(Get(x, yStart - 1)) || isPart(Get(x, yEnd + 1)))
+        if (IsPart(Get(x, yStart - 1)) || IsPart(Get(x, yEnd + 1)))
         {
             if (Get(x, yStart - 1) == '*')
             {
-                GearHack.Add(new Tuple<int, int, int>(x, yStart - 1, getDigit(x, yStart, yEnd)));
+                GearHack.Add(new Tuple<int, int, int>(x, yStart - 1, GetDigit(x, yStart, yEnd)));
             }
             if (Get(x, yEnd + 1) == '*')
             {
-                GearHack.Add(new Tuple<int, int, int>(x, yEnd + 1, getDigit(x, yStart, yEnd)));
+                GearHack.Add(new Tuple<int, int, int>(x, yEnd + 1, GetDigit(x, yStart, yEnd)));
             }
-            res = getDigit(x, yStart, yEnd);
+            res = GetDigit(x, yStart, yEnd);
         }
         return res;
     }
@@ -70,11 +70,7 @@ public class Day03 : BaseDay
     public Day03()
     {
         _input = File.ReadAllText(InputFilePath);
-        field = new Day3Field();
-        foreach (var line in _input.Split("\n"))
-        {
-            field.Field.Add(line.ToCharArray().ToList());
-        }
+        field = Day3Field.Parse(_input, "", x => x[0]);
     }
 
     public override ValueTask<string> Solve_1()
