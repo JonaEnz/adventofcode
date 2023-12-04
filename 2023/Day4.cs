@@ -1,59 +1,51 @@
 ﻿namespace AdventOfCode;
 using System.Text.RegularExpressions;
 
-using Card = (int Id, List<int> Winning, List<int> Have);
+using Card = (int Id, int Intersect);
 
-public class Day04 : BaseDay
+public partial class Day04 : BaseDay
 {
     private readonly string _input;
     private readonly List<Card> cards;
-    private Dictionary<int, Int64> wonCache = new();
 
+    [GeneratedRegex(@"Card\s+(\d+):([\d\s]+)\|([\s\d]+)")]
+    private static partial Regex ParseRegex();
     public Day04()
     {
         _input = File.ReadAllText(InputFilePath);
-        cards = new();
-        var reg = new Regex(@"Card\s+(\d+):([\d\s]+)\|([\s\d]+)");
-        foreach (var line in _input.Split("\n").Where(x => x.Count() > 0))
+        cards = [];
+        foreach (var line in _input.Split("\n").Where(x => x.Length > 0))
         {
-            var m = reg.Match(line).Groups;
+            var m = ParseRegex().Match(line).Groups;
             var cardId = int.Parse(m[1].Value);
-            var winning = m[2].Value.Split(" ").Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => int.Parse(x)).ToList();
-            var have = m[3].Value.Split(" ").Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => int.Parse(x)).ToList();
-            var c = (Id: cardId, Winning: winning, Have: have);
+            var winning = m[2].Value.Split(" ").Where(x => !string.IsNullOrWhiteSpace(x)).Select(int.Parse);
+            var have = m[3].Value.Split(" ").Where(x => !string.IsNullOrWhiteSpace(x)).Select(int.Parse);
+            var c = (Id: cardId, Intersect: winning.Intersect(have).Count());
             cards.Add(c);
         }
     }
 
-    public int cardScore(Card card)
-    {
-        return (int)Math.Pow(2, card.Item2.Intersect(card.Item3).Count() - 1);
-    }
-
+    public static int CardScore(Card card) => (int)Math.Pow(2, card.Intersect - 1);
     public override ValueTask<string> Solve_1()
     {
-        var score = cards.Select(cardScore).Sum();
-        return new($"{score}");
+        return new($"{cards.Select(CardScore).Sum()}");
     }
 
     public override ValueTask<string> Solve_2()
     {
         var cardCount = new Dictionary<int, int>();
-        foreach (var c in cards)
+        foreach (var (Id, Score) in cards)
         {
-            cardCount[c.Id] = 1;
+            cardCount[Id] = 1;
         }
-        foreach (var c in cards)
+        foreach (var (Id, Intersect) in cards.Where(c => c.Intersect > 0))
         {
-            var matches = c.Have.Intersect(c.Winning).Count();
-            if (matches > 0)
+            foreach (var i in Enumerable.Range(Id + 1, Intersect))
             {
-                foreach (var i in Enumerable.Range(c.Id + 1, matches).Where(x => x <= cards.Count))
-                {
-                    cardCount[i] += cardCount[c.Id];
-                }
+                cardCount[i] += cardCount[Id];
             }
         }
         return new($"{cardCount.Select(x => x.Value).Sum()}");
     }
+
 }
