@@ -8,10 +8,9 @@ public class Day12 : BaseDay
     public Day12()
     {
         _input = File.ReadAllText(InputFilePath).Split("\n").Where(x => !string.IsNullOrWhiteSpace(x)).Select(s => s.Split(" ").ToList()).ToList();
-
     }
 
-    public string Unfold(string fold, int n, char c) => string.Join(c, Enumerable.Repeat(fold, n));
+    public static string Unfold(string fold, int n, char c) => string.Join(c, Enumerable.Repeat(fold, n));
     public long Solve(string pattern, string sp, int foldRepeat)
     {
         pattern = Unfold(pattern, foldRepeat, '?');
@@ -22,9 +21,9 @@ public class Day12 : BaseDay
     public long Count(string pattern, List<int> springs, long counter = 0)
     {
         var key = (pattern, string.Join(".", springs), counter);
-        if (cache.ContainsKey(key))
+        if (cache.TryGetValue(key, out long value))
         {
-            return cache[key];
+            return value;
         }
         if (pattern.Length == 0)
         {
@@ -34,25 +33,13 @@ public class Day12 : BaseDay
         List<char> checks = pattern[0] == '?' ? ['.', '#'] : [pattern[0]];
         foreach (var c in checks)
         {
-            if (c == '#')
+            res += (c, counter > 0, springs.Count > 0 && springs[0] == counter) switch
             {
-                res += Count(pattern.Substring(1), springs, counter + 1);
-            }
-            else
-            {
-                if (counter > 0)
-                {
-                    if (springs.Count > 0 && springs[0] == counter)
-                    {
-                        res += Count(pattern.Substring(1), springs.Skip(1).ToList());
-                    }
-                }
-                else
-                {
-                    res += Count(pattern.Substring(1), springs);
-
-                }
-            }
+                ('#', _, _) => Count(pattern[1..], springs, counter + 1),
+                (_, false, _) => Count(pattern[1..], springs),
+                (_, _, true) => Count(pattern[1..], springs[1..]),
+                _ => 0
+            };
         }
         cache[key] = res;
         return res;
@@ -60,27 +47,13 @@ public class Day12 : BaseDay
 
     public override ValueTask<string> Solve_1()
     {
-        long res = 0;
-        cache = new Dictionary<(string, string, long), long>();
-        foreach (var line in _input)
-        {
-            var springs = line[1];
-            var l = line[0];
-            res += Solve(l, springs, 1);
-        }
-        return new($"{res}");
+        cache = [];
+        return new($"{_input.Select(line => Solve(line[0], line[1], 1)).Sum()}");
     }
 
     public override ValueTask<string> Solve_2()
     {
-        long res = 0;
-        cache = new Dictionary<(string, string, long), long>();
-        foreach (var line in _input)
-        {
-            var springs = line[1];
-            var l = line[0];
-            res += Solve(l, springs, 5);
-        }
-        return new($"{res}");
+        cache = [];
+        return new($"{_input.Select(line => Solve(line[0], line[1], 5)).Sum()}");
     }
 }
