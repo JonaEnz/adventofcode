@@ -3,7 +3,7 @@
 public class Day12 : BaseDay
 {
     private readonly List<List<string>> _input;
-    private Dictionary<(string, string, long), long> cache;
+    private Dictionary<(int, string, long), long> cache;
 
     public Day12()
     {
@@ -15,12 +15,13 @@ public class Day12 : BaseDay
     {
         pattern = Unfold(pattern, foldRepeat, '?');
         var springs = Unfold(sp, foldRepeat, ',').Split(",").Select(int.Parse).ToList();
+        cache = [];
         return Count(pattern + ".", springs);
     }
 
     public long Count(string pattern, List<int> springs, long counter = 0)
     {
-        var key = (pattern, string.Join(".", springs), counter);
+        var key = (pattern.Length, string.Concat(springs), counter);
         if (cache.TryGetValue(key, out long value))
         {
             return value;
@@ -47,13 +48,11 @@ public class Day12 : BaseDay
 
     public override ValueTask<string> Solve_1()
     {
-        cache = [];
         return new($"{_input.Select(line => Solve(line[0], line[1], 1)).Sum()}");
     }
 
     public override ValueTask<string> Solve_2()
     {
-        cache = [];
         return new($"{_input.Select(line => Solve(line[0], line[1], 5)).Sum()}");
     }
 }
