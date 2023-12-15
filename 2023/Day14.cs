@@ -16,8 +16,8 @@ public class Day14 : BaseDay
     }
     public static long Hash(List<List<char>> f) => f.Count == 0 ? 1 : f[0].Aggregate((long)1, (acc, c) => 3 * acc + (c == 'O' ? 2 : (c == '#' ? 2 : 0))) + 2 * Hash(f[1..]);
 
-    public List<List<char>> Cycle(List<List<char>> f) => Enumerable.Range(0, 4).Aggregate(f, (acc, _) => Rotate90(MoveNorth(acc)));
-    public List<List<char>> MoveNorth(List<List<char>> f2)
+    public static List<List<char>> Cycle(List<List<char>> f) => Enumerable.Range(0, 4).Aggregate(f, (acc, _) => Rotate90(MoveNorth(acc)));
+    public static List<List<char>> MoveNorth(List<List<char>> f2)
     {
         var f = f2.Select(x => x.ToList()).ToList();
         for (int x = 0; x < f[0].Count; x++)
@@ -56,7 +56,7 @@ public class Day14 : BaseDay
         var result = new List<List<char>>();
         for (int i = 0; i < l[0].Count; i++)
         {
-            result.Add(new List<char>());
+            result.Add([]);
             for (int j = l.Count - 1; j >= 0; j--)
             {
                 result[i].Add(l[j][i]);
