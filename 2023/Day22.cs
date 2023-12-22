@@ -8,7 +8,6 @@ public class Day22 : BaseDay
     private List<Block> blocks = [];
     private List<Block> fallen = [];
     private Dictionary<Block, List<Block>> depends = [];
-    private Dictionary<Block, int> above = [];
     List<List<int>> topDown = [];
 
     public Day22()
@@ -27,7 +26,6 @@ public class Day22 : BaseDay
         foreach (var _ in Enumerable.Range(0, blocks.Select(x => x.xu + 1).Max())) topDown.Add(row.ToArray().ToList());
         fallen = blocks.Select(BlockFall).ToList();
         foreach (var f in fallen) depends[f] = DependsOn(f, fallen);
-        foreach (var f in fallen) above[f] = Above(f).Count;
     }
 
     public int Height(Block block) => 1 + block.zu - block.zl;
@@ -53,15 +51,6 @@ public class Day22 : BaseDay
             topDown[xy.x][xy.y] = zStart + Height(b);
         }
         return b with { zl = zStart + 1, zu = zStart + Height(b) };
-    }
-
-    public List<Block> Above(Block b)
-    {
-        var d = depends.Where(x => x.Value.Contains(b)).Select(x => x.Key).ToList();
-        if (d.Count == 0) return [];
-        var a = d.SelectMany(Above).ToList();
-        a.AddRange(d);
-        return a.Distinct().ToList();
     }
 
     public List<Block> DependsOn(Block b, List<Block> blocks)
