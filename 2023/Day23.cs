@@ -26,10 +26,34 @@ public class Day23 : BaseDay
           '^' => [(x, y - 1)],
           _ => [],
         };
-        candidate = candidate.Where(c => c.Item1 >= 0 && c.Item2 >= 0
-            && c.Item1 < field[0].Length && c.Item2 < field.Length).ToList();
-        neighbors[(x, y)] = candidate.Select(x => (x.Item1, x.Item2, 1)).ToList();
+        neighbors[(x, y)] = candidate
+          .Where(c => c.Item1 >= 0 && c.Item2 >= 0
+            && c.Item1 < field[0].Length && c.Item2 < field.Length && field[c.Item2][c.Item1] != '#')
+          .Select(x => (x.Item1, x.Item2, 1))
+          .ToList();
       }
+    }
+  }
+
+  public void CompressNeighbors()
+  {
+    int i = 0;
+    while (neighbors.Any(x => x.Value.Count == 2))
+    {
+      i++;
+      var n = neighbors.First(x => x.Value.Count == 2);
+      var left = n.Value[0];
+      var right = n.Value[1];
+      var lleft = neighbors[(left.Item1, left.Item2)];
+      var lright = neighbors[(right.Item1, right.Item2)];
+      var length = left.Item3 + right.Item3;
+      lleft.RemoveAll(x => (x.Item1, x.Item2) == n.Key);
+      lright.RemoveAll(x => (x.Item1, x.Item2) == n.Key);
+      lleft.Add((right.Item1, right.Item2, length));
+      lright.Add((left.Item1, left.Item2, length));
+      neighbors[(left.Item1, left.Item2)] = lleft;
+      neighbors[(right.Item1, right.Item2)] = lright;
+      neighbors.Remove(n.Key);
     }
   }
 
@@ -42,11 +66,11 @@ public class Day23 : BaseDay
     while (queue.Count > 0)
     {
       var (l, steps) = queue.Dequeue();
-      if (l.Count > record) record = l.Count;
+      if (steps > record) record = steps;
       var next = neighbors[l.Last()].Where(x => !l.Contains((x.Item1, x.Item2)));
       foreach (var n in next) queue.Enqueue((l.Append((n.Item1, n.Item2)).ToList(), n.Item3 + steps));
     }
-    return record - 2;
+    return record;
   }
 
   public override ValueTask<string> Solve_1()
@@ -69,10 +93,11 @@ public class Day23 : BaseDay
           _ => Enumerable.Range(0, 4).Select(i => (x + dx[i], y + dy[i])).ToList(),
         };
         candidate = candidate.Where(c => c.Item1 >= 0 && c.Item2 >= 0
-            && c.Item1 < field[0].Length && c.Item2 < field.Length).ToList();
+            && c.Item1 < field[0].Length && c.Item2 < field.Length && field[c.Item2][c.Item1] != '#').ToList();
         neighbors[(x, y)] = candidate.Select(x => (x.Item1, x.Item2, 1)).ToList();
       }
     }
+    CompressNeighbors();
     return new($"{Solve()}");
   }
 }
