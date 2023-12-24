@@ -1,5 +1,6 @@
 namespace AdventOfCode;
 
+using Microsoft.Z3;
 using System.Text.RegularExpressions;
 using Hailstone = (double x, double y, double z, double vx, double vy, double vz);
 
@@ -45,6 +46,32 @@ public class Day24 : BaseDay
 
   public override ValueTask<string> Solve_2()
   {
-    return new("");
+    var ctx = new Context();
+    var solver = ctx.MkSolver();
+    List<IntExpr> stonePos = [ctx.MkIntConst("x"), ctx.MkIntConst("y"), ctx.MkIntConst("z")];
+    List<IntExpr> stoneVel = [ctx.MkIntConst("vx"), ctx.MkIntConst("vy"), ctx.MkIntConst("vz")];
+    int i = 0;
+    foreach (var h in hailstones.Take(3))
+    {
+      var time = ctx.MkIntConst($"t{i}");
+
+      List<IntExpr> p = [ctx.MkInt((long)h.x), ctx.MkInt((long)h.y), ctx.MkInt((long)h.z)];
+      List<IntExpr> pv = [ctx.MkInt((long)h.vx), ctx.MkInt((long)h.vy), ctx.MkInt((long)h.vz)];
+
+      solver.Add(time >= 0);
+      foreach (var j in Enumerable.Range(0, 3))
+      {
+        solver.Add(ctx.MkEq(ctx.MkAdd(stonePos[j], ctx.MkMul(time, stoneVel[j])), ctx.MkAdd(p[j], ctx.MkMul(time, pv[j]))));
+      }
+      i++;
+    }
+    solver.Check();
+    var model = solver.Model;
+    long res = 0;
+    foreach (var s in stonePos)
+    {
+      res += long.Parse(model.Eval(s).ToString());
+    }
+    return new($"{res}");
   }
 }
