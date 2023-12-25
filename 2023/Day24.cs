@@ -61,7 +61,10 @@ public class Day24 : BaseDay
       solver.Add(time >= 0);
       foreach (var j in Enumerable.Range(0, 3))
       {
-        solver.Add(ctx.MkEq(ctx.MkAdd(stonePos[j], ctx.MkMul(time, stoneVel[j])), ctx.MkAdd(p[j], ctx.MkMul(time, pv[j]))));
+        solver.Add(ctx.MkEq(
+              ctx.MkAdd(stonePos[j], ctx.MkMul(time, stoneVel[j])),
+              ctx.MkAdd(p[j], ctx.MkMul(time, pv[j]))
+              ));
       }
       i++;
     }
